@@ -8,6 +8,7 @@ public class CeldaController : MonoBehaviour
     public GameObject ParedIzquierda;
     public GameObject ParedArriba;
     public GameObject ParedAbajo;
+    public GameObject Fondo;
 
     public void eliminarMuro (int muroInt){
         /*if(muroInt == 0) ParedDerecha.SetActive(false);

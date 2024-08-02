@@ -8,8 +8,8 @@ public class GeneradorLaberinto : MonoBehaviour
     public Vector2Int tamano;
 
     private void Start () {
-        generarLaberinto(tamano);
-        //StartCoroutine(generarLaberintoAnimado(tamano));
+        //generarLaberinto(tamano);
+        StartCoroutine(generarLaberintoAnimado(tamano));
     }
 
     private void generarLaberinto(Vector2Int tamano){
@@ -130,6 +130,16 @@ public class GeneradorLaberinto : MonoBehaviour
             int celdaActualX = celdaActualIndex / tamano.y;
             int celdaActualY = celdaActualIndex % tamano.y;
 
+            //Salidas
+            if (celdaActualX == 0 && celdaActualY == 0 || celdaActualX == 0 && celdaActualY == tamano.y-1){
+                CeldaController celdaActual = celdas[celdaActualIndex];
+                celdaActual.eliminarMuro(1);
+            }
+            if (celdaActualX == tamano.x-1 && celdaActualY == 0 || celdaActualX == tamano.x-1 && celdaActualY == tamano.y-1){
+                CeldaController celdaActual = celdas[celdaActualIndex];
+                celdaActual.eliminarMuro(0);
+            }
+
             if (celdaActualX < tamano.x -1){
                 if (!completados.Contains(celdas[celdaActualIndex + tamano.y]) && !caminoActual.Contains(celdas[celdaActualIndex + tamano.y])){
                     posiblesDirecciones.Add(1);
@@ -179,11 +189,11 @@ public class GeneradorLaberinto : MonoBehaviour
                 }
 
                 caminoActual.Add(celdaEscogida);
-                celdaEscogida.GetComponent<Renderer>().material.color = Color.yellow;
+                celdaEscogida.Fondo.GetComponent<Renderer>().material.color = Color.yellow;
             }
             else{
                 completados.Add(caminoActual[caminoActual.Count - 1]);
-                caminoActual[caminoActual.Count - 1].GetComponent<Renderer>().material.color = Color.green;
+                caminoActual[caminoActual.Count - 1].Fondo.GetComponent<Renderer>().material.color = new Color (84/255.0f, 118/255.0f, 154/255.0f);
                 caminoActual.RemoveAt(caminoActual.Count - 1);
             }
             yield return new WaitForSeconds(0.05f);
