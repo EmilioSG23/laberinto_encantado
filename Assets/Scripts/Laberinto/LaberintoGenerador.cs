@@ -8,8 +8,8 @@ public class GeneradorLaberinto : MonoBehaviour
     public Vector2Int tamano;
 
     private void Start () {
-        //generarLaberinto(tamano);
-        StartCoroutine(generarLaberintoAnimado(tamano));
+        generarLaberinto(tamano);
+        //StartCoroutine(generarLaberintoAnimado(tamano));
     }
 
     private void generarLaberinto(Vector2Int tamano){
@@ -189,11 +189,11 @@ public class GeneradorLaberinto : MonoBehaviour
                 }
 
                 caminoActual.Add(celdaEscogida);
-                celdaEscogida.Fondo.GetComponent<Renderer>().material.color = Color.yellow;
+                //celdaEscogida.Fondo.GetComponent<Renderer>().material.color = Color.yellow;
             }
             else{
                 completados.Add(caminoActual[caminoActual.Count - 1]);
-                caminoActual[caminoActual.Count - 1].Fondo.GetComponent<Renderer>().material.color = new Color (84/255.0f, 118/255.0f, 154/255.0f);
+                //caminoActual[caminoActual.Count - 1].Fondo.GetComponent<Renderer>().material.color = new Color (84/255.0f, 118/255.0f, 154/255.0f);
                 caminoActual.RemoveAt(caminoActual.Count - 1);
             }
             yield return new WaitForSeconds(0.05f);
