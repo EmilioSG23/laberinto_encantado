@@ -5,6 +5,8 @@ using UnityEngine;
 public class GeneradorLaberinto : MonoBehaviour
 {
     public CeldaController celdaPrefab;
+    public Transform jugadores;
+    public GameObject jugadorPrefab;
     public Vector2Int tamano;
 
     private void Start () {
@@ -14,6 +16,7 @@ public class GeneradorLaberinto : MonoBehaviour
 
     private void generarLaberinto(Vector2Int tamano){
         List<CeldaController> celdas = new List<CeldaController>();
+        List<CeldaController> celdasSpawn = new List<CeldaController>();
 
         for (int x = 0; x < tamano.x; x++){
             for (int y = 0; y < tamano.y; y++){
@@ -36,14 +39,18 @@ public class GeneradorLaberinto : MonoBehaviour
             int celdaActualX = celdaActualIndex / tamano.y;
             int celdaActualY = celdaActualIndex % tamano.y;
 
-            //Salidas
+            //Salidas y celdas de aparición
             if (celdaActualX == 0 && celdaActualY == 0 || celdaActualX == 0 && celdaActualY == tamano.y-1){
                 CeldaController celdaActual = celdas[celdaActualIndex];
                 celdaActual.eliminarMuro(1);
+                if(!celdasSpawn.Contains(celdaActual))
+                    celdasSpawn.Add(celdaActual);
             }
             if (celdaActualX == tamano.x-1 && celdaActualY == 0 || celdaActualX == tamano.x-1 && celdaActualY == tamano.y-1){
                 CeldaController celdaActual = celdas[celdaActualIndex];
                 celdaActual.eliminarMuro(0);
+                if(!celdasSpawn.Contains(celdaActual))
+                    celdasSpawn.Add(celdaActual);
             }
 
             if (celdaActualX < tamano.x -1){
@@ -102,6 +109,18 @@ public class GeneradorLaberinto : MonoBehaviour
                 //caminoActual[caminoActual.Count - 1].GetComponent<Renderer>().material.color = Color.green;
                 caminoActual.RemoveAt(caminoActual.Count - 1);
             }
+        }
+
+        spawnearJugadores(celdasSpawn);
+    }
+
+    private void spawnearJugadores(List<CeldaController> celdasSpawn){
+        for (int i = 0; i < celdasSpawn.Count; i++){
+            Debug.Log($"Celda #{i} X: {celdasSpawn[i].transform.position.x} Y:{celdasSpawn[i].transform.position.y}");
+            GameObject jugador = Instantiate(jugadorPrefab, jugadores);
+            jugador.transform.localPosition = new Vector2(celdasSpawn[i].transform.position.x, celdasSpawn[i].transform.position.y);
+            jugador.transform.rotation = Quaternion.identity;
+            jugador.GetComponent<PlayerController>().parado = true;
         }
     }
 

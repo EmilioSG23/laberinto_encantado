@@ -17,6 +17,7 @@ public class PlayerController : MonoBehaviour
     private Vector3 direccionColision;
     private float ultimoDisparo;
     private int kills = 0;
+    public bool parado = false;
 
     void Start()
     {
@@ -26,6 +27,8 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
+        if(parado)
+            return;
        MovimientoPC();
        //MovimientoMovil();
 
