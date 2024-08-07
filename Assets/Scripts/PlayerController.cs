@@ -6,28 +6,31 @@ public class PlayerController : MonoBehaviour
 {
     public GameObject BalaPrefab;
     public GameObject joystick;
+    [HideInInspector]
+    public NetworkManager.PlayerDTO playerDTO;
     public int vida = 3;
     public float Velocidad = 5;
     public float cooldownTiro = 0.25f;
-    private Rigidbody2D Rigidbody2D;
     private float Horizontal;
     private float Vertical;
+
+    private Vector2 position;
+
     private Vector3 direccion;
     private Vector3 ultimaDireccion;
-    private Vector3 direccionColision;
     private float ultimoDisparo;
     private int kills = 0;
     public bool parado = false;
+    public bool isLocalPlayer = false;
 
     void Start()
     {
-        Rigidbody2D = GetComponent<Rigidbody2D>();
         ultimaDireccion = Vector2.right;
     }
 
     void Update()
     {
-        if(parado)
+        if(parado || !isLocalPlayer)
             return;
        MovimientoPC();
        //MovimientoMovil();
@@ -106,7 +109,17 @@ public class PlayerController : MonoBehaviour
     }
     
     private void FixedUpdate(){
-        Rigidbody2D.velocity = new Vector2(Horizontal*Velocidad, Vertical*Velocidad);
+        GetComponent<Rigidbody2D>().velocity = new Vector2(Horizontal*Velocidad, Vertical*Velocidad);
+        Vector2 newPosition = new Vector2(gameObject.transform.position.x, gameObject.transform.position.y);
+        if (position == null)
+            position = newPosition;
+        if (newPosition.x != position.x || newPosition.y != position.y){
+            position = newPosition;
+            playerDTO.updateCoords(position);
+            //NetworkManager.EmitMovePlayer(playerDTO);
+            //Debug.Log($"X: {playerDTO.coordinateX} Y: {playerDTO.coordinateY}");
+            NetworkManager.socket.Emit("moves", JsonUtility.ToJson(playerDTO));
+        }
     }
 
     private void OnTriggerEnter2D(Collider2D colision){

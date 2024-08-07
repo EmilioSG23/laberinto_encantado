@@ -116,11 +116,11 @@ public class GeneradorLaberinto : MonoBehaviour
 
     private void spawnearJugadores(List<CeldaController> celdasSpawn){
         for (int i = 0; i < celdasSpawn.Count; i++){
-            Debug.Log($"Celda #{i} X: {celdasSpawn[i].transform.position.x} Y:{celdasSpawn[i].transform.position.y}");
-            GameObject jugador = Instantiate(jugadorPrefab, jugadores);
+            //Debug.Log($"Celda #{i} X: {celdasSpawn[i].transform.position.x} Y:{celdasSpawn[i].transform.position.y}");
+            /*GameObject jugador = Instantiate(jugadorPrefab, jugadores);
             jugador.transform.localPosition = new Vector2(celdasSpawn[i].transform.position.x, celdasSpawn[i].transform.position.y);
             jugador.transform.rotation = Quaternion.identity;
-            jugador.GetComponent<PlayerController>().parado = true;
+            jugador.GetComponent<PlayerController>().parado = true;*/
         }
     }
 
