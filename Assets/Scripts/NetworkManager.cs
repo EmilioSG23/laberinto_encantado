@@ -29,12 +29,17 @@ public class NetworkManager : MonoBehaviour
             socket.Emit("joinGame", JsonUtility.ToJson(new PlayerDTO("EmilioSG23", -37.5f, -37.5f, 1)));
         };
         socket.Connect();
+        socket.On("init", (response => {OnInit(response);}));
         socket.On("message", (response) => {OnMessage(response);});
         socket.On("gameState", (response) => {OnGameState(response);});
+        socket.On("getAllPlayers", (response) => {OnGetAllPlayers(response);});
+
         socket.On("joinGame", (response) => {OnJoinGame(response);});
         socket.On("addPlayer", (response) => {OnAddPlayer(response);});
-        socket.On("init", (response => {OnInit(response);}));
         socket.On("moves", (response) => {OnMovePlayer(response);});
+        socket.On("shot", (response) => {OnShoot(response);});
+        socket.On("hit", (response) => {OnHit(response);});
+        socket.On("throwGreanade", (response) => {OnThrowGreanade(response);});
     }
 
     //ON Events
@@ -54,10 +59,9 @@ public class NetworkManager : MonoBehaviour
         CreatePlayerGameObject(playerInstance, false);
     }
     private void CreatePlayerGameObject (PlayerDTO playerInstance, bool localPlayer){
-        UnityThread.executeInUpdate(()=>{
+        UnityThread.executeInUpdate(() => {
             Transform o = jugadores.Find(playerInstance.id) as Transform;
-            if (o != null)
-                return;
+            if (o != null)  return;
             GameObject playerGO = Instantiate(jugadorPrefab, jugadores);
             playerGO.transform.localPosition = new Vector2(playerInstance.coordinateX, playerInstance.coordinateY);
             playerGO.transform.rotation = Quaternion.identity;
@@ -73,17 +77,44 @@ public class NetworkManager : MonoBehaviour
         //Debug.Log(gameInstance);
     }
     void OnMovePlayer (SocketIOResponse response){
+        PlayerDTO playerInstance = PlayerDTO.CreateFromJSON(response);
+        UnityThread.executeInUpdate(() => {
+            Transform o = jugadores.Find(playerInstance.id) as Transform;
+            if (o == null)  return;
+            GameObject playerGO = o.gameObject;
+            if (playerGO.GetComponent<PlayerController>().isLocalPlayer)    return;
+            playerGO.transform.localPosition = new Vector2(playerInstance.coordinateX, playerInstance.coordinateY);
+            playerGO.transform.rotation = Quaternion.identity;
+            playerGO.name = playerInstance.id;
+            playerGO.GetComponent<PlayerController>().parado = true;
+            playerGO.GetComponent<PlayerController>().playerDTO = playerInstance;
+        });
+    }
+    void OnGetAllPlayers (SocketIOResponse response){
+        GameDTO gameInstance = GameDTO.CreateFromJSON(response);
+        foreach (TeamDTO team in gameInstance.teams){
+            foreach (PlayerDTO player in team.players){
+                CreatePlayerGameObject(player, false);
+            }
+        }
+    }
+    void OnShoot (SocketIOResponse response){
+        PlayerDTO playerInstance = PlayerDTO.CreateFromJSON(response);
+        UnityThread.executeInUpdate(()=>{
+            Transform o = jugadores.Find(playerInstance.id) as Transform;
+            if (o == null)  return;
+            GameObject playerGO = o.gameObject;
+            if (playerGO.GetComponent<PlayerController>().isLocalPlayer)    return;
+            playerGO.GetComponent<PlayerController>().Disparar();
+        });
+    }
+    void OnHit (SocketIOResponse response){
+
+    }
+    void OnThrowGreanade (SocketIOResponse response){
 
     }
 
-    //General Emits Events
-    public void EmitMovePlayer(PlayerDTO player){
-        socket.Emit("moves", JsonUtility.ToJson(player));
-    }
-    public void EmitAddPlayer(PlayerDTO player){
-        
-    }
-    
     #region JSON_DTO
     [System.Serializable]
     public class GameDTO{
@@ -169,6 +200,20 @@ public class NetworkManager : MonoBehaviour
     [System.Serializable]
     public class GranadeDTO{
 
+    }
+    [System.Serializable]
+    public class ParticipantsDTO{
+        public List<PlayerDTO> players;
+
+        public ParticipantsDTO(List<PlayerDTO> _players){
+            players = _players;
+        }
+        public static ParticipantsDTO CreateFromJSON (string data){//data contains [] at the begin and end
+            return JsonUtility.FromJson<ParticipantsDTO>(data.Substring(1 , data.Length - 2));
+        }
+        public static ParticipantsDTO CreateFromJSON (SocketIOResponse data){//data contains [] at the begin and end
+            return JsonUtility.FromJson<ParticipantsDTO>(data.ToString().Substring(1 , data.ToString().Length - 2));
+        }
     }
     #endregion
 }

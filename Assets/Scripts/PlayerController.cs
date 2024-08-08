@@ -73,6 +73,7 @@ public class PlayerController : MonoBehaviour
         GameObject bala = Instantiate (BalaPrefab, transform.position + ultimaDireccion * 0.15f, Quaternion.identity);
         bala.GetComponent<BalaController>().setDireccion(ultimaDireccion);
         bala.GetComponent<BalaController>().setJugador(gameObject);
+        NetworkManager.socket.Emit("shoot", JsonUtility.ToJson(playerDTO));
     }
 
     public void Golpe(){
@@ -109,6 +110,8 @@ public class PlayerController : MonoBehaviour
     }
     
     private void FixedUpdate(){
+        if(parado || !isLocalPlayer)
+            return;
         GetComponent<Rigidbody2D>().velocity = new Vector2(Horizontal*Velocidad, Vertical*Velocidad);
         Vector2 newPosition = new Vector2(gameObject.transform.position.x, gameObject.transform.position.y);
         if (position == null)
