@@ -46,7 +46,7 @@ public class NetworkManager : MonoBehaviour
         socket.On("rotates", (response) => {OnRotatePlayer(response);});
         socket.On("shoot", (response) => {OnShoot(response);});
         socket.On("hit", (response) => {OnHit(response);});
-        socket.On("throwGreanade", (response) => {OnThrowGreanade(response);});
+        socket.On("throwGrenade", (response) => {OnThrowGrenade(response);});
     }
 
     //ON Events
@@ -54,7 +54,7 @@ public class NetworkManager : MonoBehaviour
         Debug.Log(response.GetValue<string>());
     }
     void OnInit (SocketIOResponse response){
-
+        //TODO se inicia la partida desde aquí
     }
     void OnGameState (SocketIOResponse response){
         //Debug.Log(response.ToString());
@@ -81,11 +81,12 @@ public class NetworkManager : MonoBehaviour
         CreatePlayerGameObject(playerInstance, true);
     }
     void OnAddPlayer (SocketIOResponse response){
-        //Debug.Log(response.GetValue<string>());
         PlayerDTO playerInstance = PlayerDTO.CreateFromJSON(response);
         CreatePlayerGameObject(playerInstance, false);
     }
     private void CreatePlayerGameObject (PlayerDTO playerInstance, bool localPlayer){
+        if (playerInstance.health <= 0)
+            return;
         UnityThread.executeInUpdate(() => {
             Transform o = jugadores.Find(playerInstance.id) as Transform;
             if (o != null)  return;
@@ -141,10 +142,27 @@ public class NetworkManager : MonoBehaviour
         });
     }
     void OnHit (SocketIOResponse response){
-
+        PlayerDTO playerInstance = PlayerDTO.CreateFromJSON(response);
+        UnityThread.executeInUpdate(()=>{
+            Transform o = jugadores.Find(playerInstance.id) as Transform;
+            if (o == null)  return;
+            GameObject playerGO = o.gameObject;
+            //if (playerGO.GetComponent<PlayerController>().isLocalPlayer)    return;
+            playerGO.GetComponent<PlayerController>().playerDTO.substractHealth();
+            if (playerGO.GetComponent<PlayerController>().playerDTO.health <= 0)
+                playerGO.GetComponent<PlayerController>().Death();
+        });
     }
-    void OnThrowGreanade (SocketIOResponse response){
-
+    void OnThrowGrenade (SocketIOResponse response){
+        PlayerDTO playerInstance = PlayerDTO.CreateFromJSON(response);
+        UnityThread.executeInUpdate(()=>{
+            Transform o = jugadores.Find(playerInstance.id) as Transform;
+            if (o == null)  return;
+            GameObject playerGO = o.gameObject;
+            if (playerGO.GetComponent<PlayerController>().isLocalPlayer)    return;
+            playerGO.GetComponent<PlayerController>().ThrowGrenade();
+            playerGO.GetComponent<PlayerController>().playerDTO.substractGranade();
+        });
     }
 
     private Vector2 lookingAtVector (int direction){
@@ -207,8 +225,10 @@ public class NetworkManager : MonoBehaviour
         public float coordinateY;
         public int lookingAt;
         public int colorTeam;
+        public int granade;
+        public int health;
 
-        public PlayerDTO (string _id, string _name, float _coordinateX, float _coordinateY, int _lookingAt, int _colorTeam){
+        public PlayerDTO (string _id, string _name, float _coordinateX, float _coordinateY, int _lookingAt, int _colorTeam, int _granade, int _health){
             id = _id;
             name = _name;
             coordinateX = _coordinateX;
@@ -216,9 +236,9 @@ public class NetworkManager : MonoBehaviour
             lookingAt = _lookingAt;
             colorTeam = _colorTeam;
         }
-        public PlayerDTO (string _id, string _name, Vector2 _position, int _lookingAt, int _colorTeam):this(_id, _name, _position.x, _position.y, _lookingAt, _colorTeam){}
-        public PlayerDTO (string _name, float _coordinateX, float _coordinateY, int _lookingAt, int _colorTeam):this("", _name, _coordinateX, _coordinateY, _lookingAt, _colorTeam){}
-        public PlayerDTO (string _id, string _name, int _colorTeam):this(_id,_name,0.0f,0.0f, 2,_colorTeam){}
+        public PlayerDTO (string _id, string _name, Vector2 _position, int _lookingAt, int _colorTeam):this(_id, _name, _position.x, _position.y, _lookingAt, _colorTeam, 3, 5){}
+        public PlayerDTO (string _name, float _coordinateX, float _coordinateY, int _lookingAt, int _colorTeam):this("", _name, _coordinateX, _coordinateY, _lookingAt, _colorTeam, 3, 5){}
+        public PlayerDTO (string _id, string _name, int _colorTeam):this(_id,_name,0.0f,0.0f, 2,_colorTeam, 3, 5){}
         public PlayerDTO (string _name, int _colorTeam):this("", _name, _colorTeam){}
 
         public void updateCoords(Vector2 position){
@@ -231,6 +251,12 @@ public class NetworkManager : MonoBehaviour
         }
         public void updateLookingAt(int direction){
             lookingAt = direction;
+        }
+        public void substractGranade(){
+            granade--;
+        }
+        public void substractHealth(){
+            health--;
         }
 
         public static PlayerDTO CreateFromJSON (string data){//data contains [] at the begin and end

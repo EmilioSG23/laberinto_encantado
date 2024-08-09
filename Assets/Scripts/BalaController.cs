@@ -4,9 +4,10 @@ using UnityEngine;
 
 public class BalaController : MonoBehaviour
 {
-    public float Velocidad = 20;
+    public float Velocidad = 300;
     private Rigidbody2D Rigidbody2D;
     private GameObject jugador;
+    private NetworkManager.PlayerDTO playerDTO;
     private Vector2 Direccion;
 
     void Start()
@@ -29,6 +30,7 @@ public class BalaController : MonoBehaviour
 
     public void setJugador (GameObject jugador){
         this.jugador = jugador;
+        this.playerDTO = jugador.GetComponent<PlayerController>().playerDTO;
     }
     public void setDireccion(Vector2 direccion){
         Direccion = direccion;
@@ -38,15 +40,11 @@ public class BalaController : MonoBehaviour
     }
 
     private void OnTriggerEnter2D(Collider2D colision){
-        //Debug.Log(colision.gameObject);
-        //Debug.Log(jugador);
-        if(colision.gameObject != jugador){
+        if(jugador != null && colision.gameObject != jugador){
             PlayerController rival = colision.GetComponent<PlayerController>();
-            if (rival != null){
-                //Debug.Log ($"Bala de {jugador} impactó a {rival}");
-                rival.Golpe();
-                if(rival.vida <=0)
-                    jugador.GetComponent<PlayerController>().Kill();
+            if (rival != null && jugador.GetComponent<PlayerController>().isLocalPlayer){
+                NetworkManager.socket.Emit("hit", JsonUtility.ToJson(rival.playerDTO));
+                //rival.Golpe();  
             }
             DestruirBala();
         }

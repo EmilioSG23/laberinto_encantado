@@ -5,21 +5,28 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour
 {
     public GameObject BalaPrefab;
+    public GameObject GreanadePrefab;
     public GameObject joystick;
     [HideInInspector]
     public NetworkManager.PlayerDTO playerDTO;
-    public int vida = 3;
+
     public float Velocidad = 5;
+
     public float cooldownTiro = 0.25f;
+    public float cooldownGranade = 1.00f;
+    private float cooldown;
     private float Horizontal;
     private float Vertical;
 
     private Vector2 position;
+    private int weapon = 0;    //0 for Gun, 1 for Grenade
 
     private Vector2 direccion;
     [HideInInspector]
     public Vector2 ultimaDireccion;
     private float ultimoDisparo;
+    private float lastTimeChangeWeapon;
+
     private int kills = 0;
     public bool parado = false;
     public bool isLocalPlayer = false;
@@ -28,6 +35,7 @@ public class PlayerController : MonoBehaviour
     {
         //ultimaDireccion = Vector2.right;
         position = new Vector2(gameObject.transform.position.x, gameObject.transform.position.y);
+        cooldown = cooldownTiro;
     }
 
     void Update()
@@ -48,13 +56,31 @@ public class PlayerController : MonoBehaviour
             actualizarDireccion(direccion);
             NetworkManager.socket.Emit("rotates", JsonUtility.ToJson(playerDTO));
         }
+
         if ((Input.GetKey(KeyCode.Space)||(Input.GetMouseButton(0)&&
         (joystick.GetComponent<Joystick>().Horizontal == 0 && joystick.GetComponent<Joystick>().Vertical == 0)))
-        && Time.time > ultimoDisparo + cooldownTiro){
-            NetworkManager.socket.Emit("shoot", JsonUtility.ToJson(playerDTO));
-            Disparar();
+        && Time.time > ultimoDisparo + cooldown){
+            if(weapon == 0){
+                NetworkManager.socket.Emit("shoot", JsonUtility.ToJson(playerDTO));
+                Disparar();
+            }
+            else if (weapon == 1){
+                if (playerDTO != null){
+                    if(playerDTO.granade > 0){
+                        NetworkManager.socket.Emit("throwGrenade", JsonUtility.ToJson(playerDTO));
+                        ThrowGrenade();
+                        playerDTO.substractGranade();
+                    }
+                }else
+                    ThrowGrenade();
+            }
             ultimoDisparo = Time.time;
         } 
+
+        if (Input.GetMouseButton(1) && Time.time > lastTimeChangeWeapon + 0.5f){
+            ChangeWeapon();
+            lastTimeChangeWeapon = Time.time;
+        }
     }
 
     private void MovimientoPC(){
@@ -72,17 +98,40 @@ public class PlayerController : MonoBehaviour
         //if (Vertical > 0.0f) Vertical = 0.5f;
     }
 
+    private void ChangeWeapon(){
+        if (weapon == 0){
+            weapon = 1;
+            cooldown = cooldownGranade;
+        }
+        else if (weapon == 1){
+            weapon = 0;
+            cooldown = cooldownTiro;
+        }
+    }
+
     public void Disparar(){
         GameObject bala = Instantiate (BalaPrefab, transform.position + (Vector3) ultimaDireccion * 0.15f, Quaternion.identity);
         bala.GetComponent<BalaController>().setDireccion(ultimaDireccion);
         bala.GetComponent<BalaController>().setJugador(gameObject);
     }
 
-    public void Golpe(){
-        vida--;
-        if(vida<=0)
-            Destroy(gameObject);
+    public void ThrowGrenade(){
+        GameObject grenade = Instantiate (GreanadePrefab, transform.position + (Vector3) ultimaDireccion * 0.15f, Quaternion.identity);
+        grenade.GetComponent<GrenadeController>().setDireccion(ultimaDireccion);
+        grenade.GetComponent<GrenadeController>().setJugador(gameObject);
     }
+
+    public void Golpe(){
+        playerDTO.substractHealth();
+        if(playerDTO.health <= 0)
+            Death();
+    }
+
+    public void Death(){
+        //TODO Emit
+        Destroy (gameObject);
+    }
+
     public void Kill(){
         kills++;
         //Debug.Log($"{gameObject} tiene {kills} kills");
