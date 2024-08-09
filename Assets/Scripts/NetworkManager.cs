@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using SocketIOClient;
 using SocketIOClient.Transport;
+using TMPro;
 
 public class NetworkManager : MonoBehaviour
 {
@@ -10,6 +11,8 @@ public class NetworkManager : MonoBehaviour
     public static SocketIOUnity socket;
     public Transform jugadores;
     public GameObject jugadorPrefab;
+    public GameObject BalaPrefab;
+    public TMP_Text timer;
     private string uri = "http://localhost:8000/game";
 
     void Awake(){
@@ -26,18 +29,22 @@ public class NetworkManager : MonoBehaviour
         });
         socket.OnConnected += (sender, e) => {
             Debug.Log ($"Conectado a {uri}");
-            socket.Emit("joinGame", JsonUtility.ToJson(new PlayerDTO("EmilioSG23", -37.5f, -37.5f, 1)));
+            socket.Emit("joinGame", JsonUtility.ToJson(new PlayerDTO("EmilioSG23", -37.5f, -37.5f, 2, 1)));
+            socket.Emit("init");
         };
         socket.Connect();
         socket.On("init", (response => {OnInit(response);}));
         socket.On("message", (response) => {OnMessage(response);});
         socket.On("gameState", (response) => {OnGameState(response);});
+        socket.On("leftTime", (response) => {OnTimeLeft(response);});
+        socket.On("endGame", (response) => {OnEndGame(response);});
         socket.On("getAllPlayers", (response) => {OnGetAllPlayers(response);});
 
         socket.On("joinGame", (response) => {OnJoinGame(response);});
         socket.On("addPlayer", (response) => {OnAddPlayer(response);});
         socket.On("moves", (response) => {OnMovePlayer(response);});
-        socket.On("shot", (response) => {OnShoot(response);});
+        socket.On("rotates", (response) => {OnRotatePlayer(response);});
+        socket.On("shoot", (response) => {OnShoot(response);});
         socket.On("hit", (response) => {OnHit(response);});
         socket.On("throwGreanade", (response) => {OnThrowGreanade(response);});
     }
@@ -48,6 +55,26 @@ public class NetworkManager : MonoBehaviour
     }
     void OnInit (SocketIOResponse response){
 
+    }
+    void OnGameState (SocketIOResponse response){
+        //Debug.Log(response.ToString());
+        GameDTO gameInstance = GameDTO.CreateFromJSON(response);
+        //Debug.Log(gameInstance);
+    }
+    void OnGetAllPlayers (SocketIOResponse response){
+        GameDTO gameInstance = GameDTO.CreateFromJSON(response);
+        foreach (TeamDTO team in gameInstance.teams){
+            foreach (PlayerDTO player in team.players){
+                CreatePlayerGameObject(player, false);
+            }
+        }
+    }
+    void OnTimeLeft(SocketIOResponse response){
+        int timeLeft = response.GetValue<int>();
+        timer.text = timeLeft.ToString();
+    }
+    void OnEndGame(SocketIOResponse response){
+        
     }
     void OnJoinGame (SocketIOResponse response){
         PlayerDTO playerInstance = PlayerDTO.CreateFromJSON(response);
@@ -68,14 +95,11 @@ public class NetworkManager : MonoBehaviour
             playerGO.name = playerInstance.id;
             playerGO.GetComponent<PlayerController>().parado = true;
             playerGO.GetComponent<PlayerController>().playerDTO = playerInstance;
+            playerGO.GetComponent<PlayerController>().ultimaDireccion = lookingAtVector(playerInstance.lookingAt);
             playerGO.GetComponent<PlayerController>().isLocalPlayer = localPlayer;
         });
     }
-    void OnGameState (SocketIOResponse response){
-        //Debug.Log(response.ToString());
-        GameDTO gameInstance = GameDTO.CreateFromJSON(response);
-        //Debug.Log(gameInstance);
-    }
+    
     void OnMovePlayer (SocketIOResponse response){
         PlayerDTO playerInstance = PlayerDTO.CreateFromJSON(response);
         UnityThread.executeInUpdate(() => {
@@ -84,20 +108,28 @@ public class NetworkManager : MonoBehaviour
             GameObject playerGO = o.gameObject;
             if (playerGO.GetComponent<PlayerController>().isLocalPlayer)    return;
             playerGO.transform.localPosition = new Vector2(playerInstance.coordinateX, playerInstance.coordinateY);
-            playerGO.transform.rotation = Quaternion.identity;
-            playerGO.name = playerInstance.id;
-            playerGO.GetComponent<PlayerController>().parado = true;
-            playerGO.GetComponent<PlayerController>().playerDTO = playerInstance;
+            playerGO.GetComponent<PlayerController>().playerDTO.updateCoords(playerInstance.coordinateX, playerInstance.coordinateY);
         });
     }
-    void OnGetAllPlayers (SocketIOResponse response){
-        GameDTO gameInstance = GameDTO.CreateFromJSON(response);
-        foreach (TeamDTO team in gameInstance.teams){
-            foreach (PlayerDTO player in team.players){
-                CreatePlayerGameObject(player, false);
-            }
-        }
+    void OnRotatePlayer (SocketIOResponse response){
+        PlayerDTO playerInstance = PlayerDTO.CreateFromJSON(response);
+        UnityThread.executeInUpdate(() => {
+            Transform o = jugadores.Find(playerInstance.id) as Transform;
+            if (o == null)  return;
+            GameObject playerGO = o.gameObject;
+            if (playerGO.GetComponent<PlayerController>().isLocalPlayer)    return;
+            playerGO.GetComponent<PlayerController>().playerDTO.updateLookingAt(playerInstance.lookingAt);
+            if (playerInstance.lookingAt == 0)
+                playerGO.GetComponent<PlayerController>().actualizarDireccion(Vector2.up);
+            if (playerInstance.lookingAt == 1)
+                playerGO.GetComponent<PlayerController>().actualizarDireccion(Vector2.down);
+            if (playerInstance.lookingAt == 2)
+                playerGO.GetComponent<PlayerController>().actualizarDireccion(Vector2.right);
+            if (playerInstance.lookingAt == 3)
+                playerGO.GetComponent<PlayerController>().actualizarDireccion(Vector2.left);
+        });
     }
+    
     void OnShoot (SocketIOResponse response){
         PlayerDTO playerInstance = PlayerDTO.CreateFromJSON(response);
         UnityThread.executeInUpdate(()=>{
@@ -113,6 +145,17 @@ public class NetworkManager : MonoBehaviour
     }
     void OnThrowGreanade (SocketIOResponse response){
 
+    }
+
+    private Vector2 lookingAtVector (int direction){
+        if (direction == 0)
+            return Vector2.up;
+        else if (direction == 1)
+            return Vector2.down;
+        else if (direction == 2)
+            return Vector2.right;
+        else
+            return Vector2.left;
     }
 
     #region JSON_DTO
@@ -162,23 +205,32 @@ public class NetworkManager : MonoBehaviour
         public string name;
         public float coordinateX;
         public float coordinateY;
+        public int lookingAt;
         public int colorTeam;
 
-        public PlayerDTO (string _id, string _name, float _coordinateX, float _coordinateY, int _colorTeam){
+        public PlayerDTO (string _id, string _name, float _coordinateX, float _coordinateY, int _lookingAt, int _colorTeam){
             id = _id;
             name = _name;
             coordinateX = _coordinateX;
             coordinateY = _coordinateY;
+            lookingAt = _lookingAt;
             colorTeam = _colorTeam;
         }
-        public PlayerDTO (string _id, string _name, Vector2 _position, int _colorTeam):this(_id, _name, _position.x, _position.y,_colorTeam){}
-        public PlayerDTO (string _name, float _coordinateX, float _coordinateY, int _colorTeam):this("", _name, _coordinateX, _coordinateY, _colorTeam){}
-        public PlayerDTO (string _id, string _name, int _colorTeam):this(_id,_name,0.0f,0.0f,_colorTeam){}
+        public PlayerDTO (string _id, string _name, Vector2 _position, int _lookingAt, int _colorTeam):this(_id, _name, _position.x, _position.y, _lookingAt, _colorTeam){}
+        public PlayerDTO (string _name, float _coordinateX, float _coordinateY, int _lookingAt, int _colorTeam):this("", _name, _coordinateX, _coordinateY, _lookingAt, _colorTeam){}
+        public PlayerDTO (string _id, string _name, int _colorTeam):this(_id,_name,0.0f,0.0f, 2,_colorTeam){}
         public PlayerDTO (string _name, int _colorTeam):this("", _name, _colorTeam){}
 
         public void updateCoords(Vector2 position){
             coordinateX = position.x;
             coordinateY = position.y;
+        }
+        public void updateCoords(float x, float y){
+            coordinateX = x;
+            coordinateY = y;
+        }
+        public void updateLookingAt(int direction){
+            lookingAt = direction;
         }
 
         public static PlayerDTO CreateFromJSON (string data){//data contains [] at the begin and end

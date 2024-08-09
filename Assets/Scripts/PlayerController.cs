@@ -16,8 +16,9 @@ public class PlayerController : MonoBehaviour
 
     private Vector2 position;
 
-    private Vector3 direccion;
-    private Vector3 ultimaDireccion;
+    private Vector2 direccion;
+    [HideInInspector]
+    public Vector2 ultimaDireccion;
     private float ultimoDisparo;
     private int kills = 0;
     public bool parado = false;
@@ -25,7 +26,8 @@ public class PlayerController : MonoBehaviour
 
     void Start()
     {
-        ultimaDireccion = Vector2.right;
+        //ultimaDireccion = Vector2.right;
+        position = new Vector2(gameObject.transform.position.x, gameObject.transform.position.y);
     }
 
     void Update()
@@ -42,13 +44,14 @@ public class PlayerController : MonoBehaviour
         else
             direccion = Vector2.zero;
 
-        if (direccion != Vector3.zero){
-            ultimaDireccion = direccion;
-            actualizarDireccion(ultimaDireccion);
+        if (direccion != Vector2.zero && ultimaDireccion != direccion){
+            actualizarDireccion(direccion);
+            NetworkManager.socket.Emit("rotates", JsonUtility.ToJson(playerDTO));
         }
         if ((Input.GetKey(KeyCode.Space)||(Input.GetMouseButton(0)&&
         (joystick.GetComponent<Joystick>().Horizontal == 0 && joystick.GetComponent<Joystick>().Vertical == 0)))
         && Time.time > ultimoDisparo + cooldownTiro){
+            NetworkManager.socket.Emit("shoot", JsonUtility.ToJson(playerDTO));
             Disparar();
             ultimoDisparo = Time.time;
         } 
@@ -70,10 +73,9 @@ public class PlayerController : MonoBehaviour
     }
 
     public void Disparar(){
-        GameObject bala = Instantiate (BalaPrefab, transform.position + ultimaDireccion * 0.15f, Quaternion.identity);
+        GameObject bala = Instantiate (BalaPrefab, transform.position + (Vector3) ultimaDireccion * 0.15f, Quaternion.identity);
         bala.GetComponent<BalaController>().setDireccion(ultimaDireccion);
         bala.GetComponent<BalaController>().setJugador(gameObject);
-        NetworkManager.socket.Emit("shoot", JsonUtility.ToJson(playerDTO));
     }
 
     public void Golpe(){
@@ -83,30 +85,36 @@ public class PlayerController : MonoBehaviour
     }
     public void Kill(){
         kills++;
-        Debug.Log($"{gameObject} tiene {kills} kills");
+        //Debug.Log($"{gameObject} tiene {kills} kills");
     }
 
-    private void actualizarDireccion(Vector2 direccion){
+    public void actualizarDireccion(Vector2 direccion){
+        ultimaDireccion = direccion;
          if (direccion == Vector2.up)
         {
             transform.rotation = Quaternion.Euler(0, 0, 90);
             transform.localScale = new Vector3 (Mathf.Abs(transform.localScale.x), Mathf.Abs(transform.localScale.y), Mathf.Abs(transform.localScale.z));
+            playerDTO.updateLookingAt(0);
         }
         else if (direccion == Vector2.down)
         {
             transform.rotation = Quaternion.Euler(0, 0, 90);
             transform.localScale = new Vector3 (-Mathf.Abs(transform.localScale.x), Mathf.Abs(transform.localScale.y), Mathf.Abs(transform.localScale.z));
-        }
-        else if (direccion == Vector2.left)
-        {
-            transform.rotation = Quaternion.Euler(0, 0, 0);
-            transform.localScale = new Vector3 (-Mathf.Abs(transform.localScale.x), Mathf.Abs(transform.localScale.y), Mathf.Abs(transform.localScale.z));
+            playerDTO.updateLookingAt(1);
         }
         else if (direccion == Vector2.right)
         {
             transform.rotation = Quaternion.Euler(0, 0, 0);
             transform.localScale = new Vector3 (Mathf.Abs(transform.localScale.x), Mathf.Abs(transform.localScale.y), Mathf.Abs(transform.localScale.z));
+            playerDTO.updateLookingAt(2);
         }
+        else if (direccion == Vector2.left)
+        {
+            transform.rotation = Quaternion.Euler(0, 0, 0);
+            transform.localScale = new Vector3 (-Mathf.Abs(transform.localScale.x), Mathf.Abs(transform.localScale.y), Mathf.Abs(transform.localScale.z));
+            playerDTO.updateLookingAt(3);
+        }
+        //Debug.Log($"Player {playerDTO.id} is looking at: {playerDTO.lookingAt}");
     }
     
     private void FixedUpdate(){
@@ -114,8 +122,6 @@ public class PlayerController : MonoBehaviour
             return;
         GetComponent<Rigidbody2D>().velocity = new Vector2(Horizontal*Velocidad, Vertical*Velocidad);
         Vector2 newPosition = new Vector2(gameObject.transform.position.x, gameObject.transform.position.y);
-        if (position == null)
-            position = newPosition;
         if (newPosition.x != position.x || newPosition.y != position.y){
             position = newPosition;
             playerDTO.updateCoords(position);
@@ -126,6 +132,8 @@ public class PlayerController : MonoBehaviour
     }
 
     private void OnTriggerEnter2D(Collider2D colision){
-        Debug.Log(colision);
+        if(parado || !isLocalPlayer)
+            return;
+        //Debug.Log(colision);
     }
 }
