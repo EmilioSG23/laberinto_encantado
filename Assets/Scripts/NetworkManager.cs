@@ -29,7 +29,7 @@ public class NetworkManager : MonoBehaviour
         });
         socket.OnConnected += (sender, e) => {
             Debug.Log ($"Conectado a {uri}");
-            socket.Emit("joinGame", JsonUtility.ToJson(new PlayerDTO("EmilioSG23", -37.5f, -37.5f, 2, 1)));
+            socket.Emit("joinGame", JsonUtility.ToJson(new PlayerDTO("EmilioSG23", -155.0f, -160.0f, 2, 1)));
             socket.Emit("init");
         };
         socket.Connect();
