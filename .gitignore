@@ -7,6 +7,7 @@
 [Bb]uild/
 [Bb]uilds/
 [Ll]ogs/
+Logs/
 [Uu]serSettings/
 Assets/AssetStoreTools*
 
@@ -28,6 +29,7 @@ ExportedObj/
 *.svd
 *.pdb
 *.opendb
+*.log
 
 # Unity3D generated meta files
 *.pidb.meta
