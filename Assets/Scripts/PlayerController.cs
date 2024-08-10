@@ -180,7 +180,7 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void OnTriggerEnter2D(Collider2D colision){
+    private void OnCollisionEnter2D(Collision2D colision){
         if(parado || !isLocalPlayer)
             return;
         //Debug.Log(colision);
