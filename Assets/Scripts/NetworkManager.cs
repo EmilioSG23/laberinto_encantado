@@ -91,12 +91,7 @@ public class NetworkManager : MonoBehaviour
             Transform o = jugadores.Find(playerInstance.id) as Transform;
             if (o != null)  return;
             GameObject playerGO = Instantiate(jugadorPrefab, jugadores);
-            playerGO.transform.localPosition = new Vector2(playerInstance.coordinateX, playerInstance.coordinateY);
-            playerGO.transform.rotation = Quaternion.identity;
-            playerGO.name = playerInstance.id;
-            playerGO.GetComponent<PlayerController>().parado = true;
-            playerGO.GetComponent<PlayerController>().playerDTO = playerInstance;
-            playerGO.GetComponent<PlayerController>().ultimaDireccion = lookingAtVector(playerInstance.lookingAt);
+            playerGO.GetComponent<PlayerController>().initPlayerGameObject (playerInstance);
             playerGO.GetComponent<PlayerController>().isLocalPlayer = localPlayer;
         });
     }
@@ -165,17 +160,6 @@ public class NetworkManager : MonoBehaviour
         });
     }
 
-    private Vector2 lookingAtVector (int direction){
-        if (direction == 0)
-            return Vector2.up;
-        else if (direction == 1)
-            return Vector2.down;
-        else if (direction == 2)
-            return Vector2.right;
-        else
-            return Vector2.left;
-    }
-
     #region JSON_DTO
     [System.Serializable]
     public class GameDTO{
@@ -221,6 +205,7 @@ public class NetworkManager : MonoBehaviour
     public class PlayerDTO{
         public string id;
         public string name;
+        public int numberInTeam;
         public float coordinateX;
         public float coordinateY;
         public int lookingAt;
@@ -228,17 +213,18 @@ public class NetworkManager : MonoBehaviour
         public int granade;
         public int health;
 
-        public PlayerDTO (string _id, string _name, float _coordinateX, float _coordinateY, int _lookingAt, int _colorTeam, int _granade, int _health){
+        public PlayerDTO (string _id, string _name, int _numberInTeam, float _coordinateX, float _coordinateY, int _lookingAt, int _colorTeam, int _granade, int _health){
             id = _id;
             name = _name;
+            numberInTeam = _numberInTeam;
             coordinateX = _coordinateX;
             coordinateY = _coordinateY;
             lookingAt = _lookingAt;
             colorTeam = _colorTeam;
         }
-        public PlayerDTO (string _id, string _name, Vector2 _position, int _lookingAt, int _colorTeam):this(_id, _name, _position.x, _position.y, _lookingAt, _colorTeam, 3, 5){}
-        public PlayerDTO (string _name, float _coordinateX, float _coordinateY, int _lookingAt, int _colorTeam):this("", _name, _coordinateX, _coordinateY, _lookingAt, _colorTeam, 3, 5){}
-        public PlayerDTO (string _id, string _name, int _colorTeam):this(_id,_name,0.0f,0.0f, 2,_colorTeam, 3, 5){}
+        public PlayerDTO (string _id, string _name, Vector2 _position, int _lookingAt, int _colorTeam):this(_id, _name, 0, _position.x, _position.y, _lookingAt, _colorTeam, 3, 5){}
+        public PlayerDTO (string _name, float _coordinateX, float _coordinateY, int _lookingAt, int _colorTeam):this("", _name, 0, _coordinateX, _coordinateY, _lookingAt, _colorTeam, 3, 5){}
+        public PlayerDTO (string _id, string _name, int _colorTeam):this(_id,_name, 0,0.0f,0.0f, 2,_colorTeam, 3, 5){}
         public PlayerDTO (string _name, int _colorTeam):this("", _name, _colorTeam){}
 
         public void updateCoords(Vector2 position){

@@ -1,9 +1,11 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 public class PlayerController : MonoBehaviour
 {
+    public TMP_Text textTeamID;
     public GameObject BalaPrefab;
     public GameObject GreanadePrefab;
     public GameObject joystick;
@@ -83,6 +85,51 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    public void initPlayerGameObject(NetworkManager.PlayerDTO playerInstance){
+        gameObject.transform.localPosition = new Vector2(playerInstance.coordinateX, playerInstance.coordinateY);
+        gameObject.transform.rotation = Quaternion.identity;
+        gameObject.name = playerInstance.id;
+        initTeamIndicator(playerInstance.numberInTeam, playerInstance.colorTeam);
+        parado = true;
+        playerDTO = playerInstance;
+        ultimaDireccion = lookingAtVector(playerInstance.lookingAt);
+    }
+
+    private void initTeamIndicator(int numberInTeam, int colorTeam){
+        textTeamID.text = numberInTeam.ToString();
+        //RED
+        if (colorTeam == 0){
+            textTeamID.color = Color.white;
+            transform.GetComponent<SpriteRenderer>().color = Color.red;
+        }
+        //BLUE
+        if (colorTeam == 1){
+            textTeamID.color = Color.white;
+            transform.GetComponent<SpriteRenderer>().color = Color.blue;
+        }
+        //GREEN
+        if (colorTeam == 2){
+            textTeamID.color = Color.black;
+            transform.GetComponent<SpriteRenderer>().color = Color.green;
+        }
+        //YELLOW
+        if (colorTeam == 3){
+            textTeamID.color = Color.black;
+            transform.GetComponent<SpriteRenderer>().color = Color.yellow;
+        }
+    }
+
+    private Vector2 lookingAtVector (int direction){
+        if (direction == 0)
+            return Vector2.up;
+        else if (direction == 1)
+            return Vector2.down;
+        else if (direction == 2)
+            return Vector2.right;
+        else
+            return Vector2.left;
+    }
+
     private void MovimientoPC(){
         joystick.SetActive(false);
         Horizontal = Input.GetAxisRaw("Horizontal");
@@ -139,30 +186,31 @@ public class PlayerController : MonoBehaviour
 
     public void actualizarDireccion(Vector2 direccion){
         ultimaDireccion = direccion;
-         if (direccion == Vector2.up)
-        {
+         if (direccion == Vector2.up){
             transform.rotation = Quaternion.Euler(0, 0, 90);
             transform.localScale = new Vector3 (Mathf.Abs(transform.localScale.x), Mathf.Abs(transform.localScale.y), Mathf.Abs(transform.localScale.z));
+            textTeamID.transform.localScale = new Vector3 (Mathf.Abs(textTeamID.transform.localScale.x), Mathf.Abs(textTeamID.transform.localScale.y), Mathf.Abs(textTeamID.transform.localScale.z));
             playerDTO.updateLookingAt(0);
         }
-        else if (direccion == Vector2.down)
-        {
+        else if (direccion == Vector2.down){
             transform.rotation = Quaternion.Euler(0, 0, 90);
             transform.localScale = new Vector3 (-Mathf.Abs(transform.localScale.x), Mathf.Abs(transform.localScale.y), Mathf.Abs(transform.localScale.z));
+            textTeamID.transform.localScale = new Vector3 (-Mathf.Abs(textTeamID.transform.localScale.x), Mathf.Abs(textTeamID.transform.localScale.y), Mathf.Abs(textTeamID.transform.localScale.z));
             playerDTO.updateLookingAt(1);
         }
-        else if (direccion == Vector2.right)
-        {
+        else if (direccion == Vector2.right){
             transform.rotation = Quaternion.Euler(0, 0, 0);
             transform.localScale = new Vector3 (Mathf.Abs(transform.localScale.x), Mathf.Abs(transform.localScale.y), Mathf.Abs(transform.localScale.z));
+            textTeamID.transform.localScale = new Vector3 (Mathf.Abs(textTeamID.transform.localScale.x), Mathf.Abs(textTeamID.transform.localScale.y), Mathf.Abs(textTeamID.transform.localScale.z));
             playerDTO.updateLookingAt(2);
         }
-        else if (direccion == Vector2.left)
-        {
+        else if (direccion == Vector2.left){
             transform.rotation = Quaternion.Euler(0, 0, 0);
             transform.localScale = new Vector3 (-Mathf.Abs(transform.localScale.x), Mathf.Abs(transform.localScale.y), Mathf.Abs(transform.localScale.z));
+            textTeamID.transform.localScale = new Vector3 (-Mathf.Abs(textTeamID.transform.localScale.x), Mathf.Abs(textTeamID.transform.localScale.y), Mathf.Abs(textTeamID.transform.localScale.z));
             playerDTO.updateLookingAt(3);
         }
+        textTeamID.transform.rotation = Quaternion.Euler (0, 0, 0);
         //Debug.Log($"Player {playerDTO.id} is looking at: {playerDTO.lookingAt}");
     }
     
