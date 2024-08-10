@@ -31,6 +31,7 @@ public class NetworkManager : MonoBehaviour
             Debug.Log ($"Conectado a {uri}");
             socket.Emit("joinGame", JsonUtility.ToJson(new PlayerDTO("EmilioSG23", 125.0f, 120.0f, 2, 1)));
             socket.Emit("init");
+            //socket.Emit("createMap", JsonUtility.ToJson(new MapDTO (15, 15, 1, 1)));
         };
         socket.Connect();
         socket.On("init", (response => {OnInit(response);}));
@@ -39,6 +40,7 @@ public class NetworkManager : MonoBehaviour
         socket.On("leftTime", (response) => {OnTimeLeft(response);});
         socket.On("endGame", (response) => {OnEndGame(response);});
         socket.On("getAllPlayers", (response) => {OnGetAllPlayers(response);});
+        socket.On("map", (response) => {OnCreateMap(response);});
 
         socket.On("joinGame", (response) => {OnJoinGame(response);});
         socket.On("addPlayer", (response) => {OnAddPlayer(response);});
@@ -68,6 +70,10 @@ public class NetworkManager : MonoBehaviour
                 CreatePlayerGameObject(player, false);
             }
         }
+    }
+
+    void OnCreateMap (SocketIOResponse response){
+        Debug.Log(response.ToString());
     }
     void OnTimeLeft(SocketIOResponse response){
         int timeLeft = response.GetValue<int>();
@@ -257,26 +263,13 @@ public class NetworkManager : MonoBehaviour
         }
     }
     [System.Serializable]
-    public class BulletDTO {
+    public class MapDTO{
+        List<int> size;
+        List<int> scale;
 
-        
-    }
-    [System.Serializable]
-    public class GranadeDTO{
-
-    }
-    [System.Serializable]
-    public class ParticipantsDTO{
-        public List<PlayerDTO> players;
-
-        public ParticipantsDTO(List<PlayerDTO> _players){
-            players = _players;
-        }
-        public static ParticipantsDTO CreateFromJSON (string data){//data contains [] at the begin and end
-            return JsonUtility.FromJson<ParticipantsDTO>(data.Substring(1 , data.Length - 2));
-        }
-        public static ParticipantsDTO CreateFromJSON (SocketIOResponse data){//data contains [] at the begin and end
-            return JsonUtility.FromJson<ParticipantsDTO>(data.ToString().Substring(1 , data.ToString().Length - 2));
+        public MapDTO (int sizeX, int sizeY, int scaleX, int scaleY){
+            size = new List<int> {sizeX, sizeY};
+            scale = new List<int> {scaleX, scaleY};
         }
     }
     #endregion

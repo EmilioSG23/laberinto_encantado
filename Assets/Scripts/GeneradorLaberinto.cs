@@ -19,7 +19,7 @@ public class GeneradorLaberinto : MonoBehaviour
 
         for (int x = 0; x < tamano.x; x++){
             for (int y = 0; y < tamano.y; y++){
-                Vector2 posicionCelda = new Vector2 ((x -(tamano.x / 2f))*celdaPrefab.transform.localScale.x, (y - (tamano.y / 2f))*celdaPrefab.transform.localScale.y);
+                Vector2 posicionCelda = new Vector2 ((x -(tamano.x / 2f)) * celdaPrefab.transform.localScale.x, (y - (tamano.y / 2f)) * celdaPrefab.transform.localScale.y);
                 CeldaController celda = Instantiate(celdaPrefab, posicionCelda, Quaternion.identity, transform);
                 celda.name = $"[{x+1};{y+1}]";
                 celdas.Add(celda);
