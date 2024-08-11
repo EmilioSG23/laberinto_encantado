@@ -10,6 +10,8 @@ public class NetworkManager : MonoBehaviour
     public static NetworkManager instance;
     public static SocketIOUnity socket;
     public Transform jugadores;
+    public Transform laberinto;
+    public CeldaController celdaPrefab;
     public GameObject jugadorPrefab;
     public GameObject BalaPrefab;
     public TMP_Text timer;
@@ -23,6 +25,19 @@ public class NetworkManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
     void Start(){
+        /*string response = "[{\"sizeX\":3,\"sizeY\":3,\"cells\":[[{\"right\":true,\"left\":true,\"up\":false,\"down\":true},{\"right\":false,\"left\":true,\"up\":false,\"down\":false},{\"right\":false,\"left\":true,\"up\":true,\"down\":false}],[{\"right\":false,\"left\":true,\"up\":true,\"down\":true},{\"right\":false,\"left\":false,\"up\":true,\"down\":true},{\"right\":false,\"left\":false,\"up\":true,\"down\":true}],[{\"right\":true,\"left\":false,\"up\":false,\"down\":true},{\"right\":true,\"left\":false,\"up\":true,\"down\":false},{\"right\":true,\"left\":false,\"up\":true,\"down\":true}]]}]";
+        Debug.Log (response);
+        MapDTO mapInstance = MapDTO.CreateFromJSON(response);
+        Debug.Log (mapInstance);
+        Debug.Log (mapInstance.sizeX);
+        Debug.Log (mapInstance.sizeY);
+        Debug.Log (mapInstance.cells);
+        Debug.Log (mapInstance.cells[0][0].right);
+        Debug.Log (mapInstance.cells[0][0].left);
+        Debug.Log (mapInstance.cells[0][0].up);
+        Debug.Log (mapInstance.cells[0][0].down);*/
+
+
         socket = new SocketIOUnity(uri, new SocketIOOptions{
             Query = new Dictionary<string, string>{{"token", "UNITY" }},
             Transport = SocketIOClient.Transport.TransportProtocol.WebSocket
@@ -40,7 +55,7 @@ public class NetworkManager : MonoBehaviour
         socket.On("leftTime", (response) => {OnTimeLeft(response);});
         socket.On("endGame", (response) => {OnEndGame(response);});
         socket.On("getAllPlayers", (response) => {OnGetAllPlayers(response);});
-        socket.On("map", (response) => {OnCreateMap(response);});
+        socket.On("createMap", (response) => {OnCreateMap(response);});
 
         socket.On("joinGame", (response) => {OnJoinGame(response);});
         socket.On("addPlayer", (response) => {OnAddPlayer(response);});
@@ -74,6 +89,33 @@ public class NetworkManager : MonoBehaviour
 
     void OnCreateMap (SocketIOResponse response){
         Debug.Log(response.ToString());
+        MapDTO mapInstance = MapDTO.CreateFromJSON(response);
+        /*Debug.Log (mapInstance);
+        Debug.Log (mapInstance.cells[0][0].right);
+        Debug.Log (mapInstance.cells[0][0].left);
+        Debug.Log (mapInstance.cells[0][0].up);
+        Debug.Log (mapInstance.cells[0][0].down);*/
+        int sizeX = mapInstance.sizeX;
+        int sizeY = mapInstance.sizeY;
+
+        UnityThread.executeInUpdate(() => {
+            /*for (int x = 0; x < sizeX; x++){
+                for (int y = 0; y < sizeY; y++){
+                    Vector2 posicionCelda = new Vector2 ((x -(sizeX / 2f)) * celdaPrefab.transform.localScale.x, (y - (sizeY / 2f)) * celdaPrefab.transform.localScale.y);
+                    CeldaController celda = Instantiate(celdaPrefab, posicionCelda, Quaternion.identity, laberinto);
+                    celda.name = $"[{x+1};{y+1}]";
+                    if (!mapInstance.cells[x][y].right)
+                        celda.GetComponent<CeldaController>().eliminarMuro(0);
+                    if (!mapInstance.cells[x][y].left)
+                        celda.GetComponent<CeldaController>().eliminarMuro(1);
+                    if (!mapInstance.cells[x][y].up)
+                        celda.GetComponent<CeldaController>().eliminarMuro(2);
+                    if (!mapInstance.cells[x][y].down)
+                        celda.GetComponent<CeldaController>().eliminarMuro(3);
+                }
+            }*/
+            laberinto.gameObject.GetComponent<GeneradorLaberinto>().generateMaze(mapInstance);
+        });
     }
     void OnTimeLeft(SocketIOResponse response){
         int timeLeft = response.GetValue<int>();
@@ -264,12 +306,35 @@ public class NetworkManager : MonoBehaviour
     }
     [System.Serializable]
     public class MapDTO{
-        List<int> size;
-        List<int> scale;
+        public int sizeX;
+        public int sizeY;
+        public CellDTO[][] cells;
 
-        public MapDTO (int sizeX, int sizeY, int scaleX, int scaleY){
-            size = new List<int> {sizeX, sizeY};
-            scale = new List<int> {scaleX, scaleY};
+        public MapDTO (int _sizeX, int _sizeY, CellDTO[][] _cells){
+            sizeX = _sizeX;
+            sizeY = _sizeY;
+            cells = _cells;
+        }
+        
+        public static MapDTO CreateFromJSON (string data){//data contains [] at the begin and end
+            return Newtonsoft.Json.JsonConvert.DeserializeObject<MapDTO>(data.Substring(1 , data.Length - 2));
+        }
+        public static MapDTO CreateFromJSON (SocketIOResponse data){//data contains [] at the begin and end
+            return Newtonsoft.Json.JsonConvert.DeserializeObject<MapDTO>(data.ToString().Substring(1 , data.ToString().Length - 2));
+        }
+    }
+    [System.Serializable]
+    public class CellDTO{
+        public bool right;
+        public bool left;
+        public bool up;
+        public bool down;
+
+        public CellDTO (bool _right, bool _left, bool _up, bool _down){
+            right = _right;
+            left = _left;
+            up = _up;
+            down = _down;
         }
     }
     #endregion

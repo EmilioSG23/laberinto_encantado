@@ -10,8 +10,30 @@ public class GeneradorLaberinto : MonoBehaviour
     public Vector2Int tamano;
 
     private void Start () {
-        generarLaberinto(tamano);
+        //generarLaberinto(tamano);
         //StartCoroutine(generarLaberintoAnimado(tamano));
+    }
+
+    public void generateMaze (NetworkManager.MapDTO mapInstance){
+        tamano.x = mapInstance.sizeX;
+        tamano.y = mapInstance.sizeY;
+        for (int x = 0; x < tamano.x; x++){
+            for (int y = 0; y < tamano.y; y++){
+                Vector2 posicionCelda = new Vector2 ((x -(tamano.x / 2f)) * celdaPrefab.transform.localScale.x, (y - (tamano.y / 2f)) * celdaPrefab.transform.localScale.y);
+                CeldaController celda = Instantiate(celdaPrefab, posicionCelda, Quaternion.identity, transform);
+                celda.name = $"[{x+1};{y+1}]";
+                if (!mapInstance.cells[x][y].right)
+                    celda.GetComponent<CeldaController>().eliminarMuro(0);
+                if (!mapInstance.cells[x][y].left)
+                    celda.GetComponent<CeldaController>().eliminarMuro(1);
+                if (!mapInstance.cells[x][y].up)
+                    celda.GetComponent<CeldaController>().eliminarMuro(2);
+                if (!mapInstance.cells[x][y].down)
+                    celda.GetComponent<CeldaController>().eliminarMuro(3);
+            }
+        }
+        prepareSpawnPoints();
+        setExitDoors();
     }
 
     private void generarLaberinto(Vector2Int tamano){
@@ -96,8 +118,8 @@ public class GeneradorLaberinto : MonoBehaviour
                 caminoActual.RemoveAt(caminoActual.Count - 1);
             }
         }
-        prepareSpawnPoints();
-        setExitDoors();
+        //prepareSpawnPoints();
+        //setExitDoors();
     }
 
     private void prepareSpawnPoints(){
