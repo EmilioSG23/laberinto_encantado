@@ -15,6 +15,8 @@ public class NetworkManager : MonoBehaviour
     public GameObject jugadorPrefab;
     public GameObject BalaPrefab;
     public TMP_Text timer;
+
+    private PlayerDTO localPlayer;
     private string uri = "http://localhost:8000/game";
 
     void Awake(){
@@ -25,19 +27,6 @@ public class NetworkManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
     void Start(){
-        /*string response = "[{\"sizeX\":3,\"sizeY\":3,\"cells\":[[{\"right\":true,\"left\":true,\"up\":false,\"down\":true},{\"right\":false,\"left\":true,\"up\":false,\"down\":false},{\"right\":false,\"left\":true,\"up\":true,\"down\":false}],[{\"right\":false,\"left\":true,\"up\":true,\"down\":true},{\"right\":false,\"left\":false,\"up\":true,\"down\":true},{\"right\":false,\"left\":false,\"up\":true,\"down\":true}],[{\"right\":true,\"left\":false,\"up\":false,\"down\":true},{\"right\":true,\"left\":false,\"up\":true,\"down\":false},{\"right\":true,\"left\":false,\"up\":true,\"down\":true}]]}]";
-        Debug.Log (response);
-        MapDTO mapInstance = MapDTO.CreateFromJSON(response);
-        Debug.Log (mapInstance);
-        Debug.Log (mapInstance.sizeX);
-        Debug.Log (mapInstance.sizeY);
-        Debug.Log (mapInstance.cells);
-        Debug.Log (mapInstance.cells[0][0].right);
-        Debug.Log (mapInstance.cells[0][0].left);
-        Debug.Log (mapInstance.cells[0][0].up);
-        Debug.Log (mapInstance.cells[0][0].down);*/
-
-
         socket = new SocketIOUnity(uri, new SocketIOOptions{
             Query = new Dictionary<string, string>{{"token", "UNITY" }},
             Transport = SocketIOClient.Transport.TransportProtocol.WebSocket
@@ -48,6 +37,11 @@ public class NetworkManager : MonoBehaviour
             socket.Emit("init");
             //socket.Emit("createMap", JsonUtility.ToJson(new MapDTO (15, 15, 1, 1)));
         };
+
+        socket.OnDisconnected += (sender, e) => {
+            socket.Emit("disconnectPlayer", JsonUtility.ToJson(localPlayer));
+        };
+
         socket.Connect();
         socket.On("init", (response => {OnInit(response);}));
         socket.On("message", (response) => {OnMessage(response);});
@@ -56,14 +50,19 @@ public class NetworkManager : MonoBehaviour
         socket.On("endGame", (response) => {OnEndGame(response);});
         socket.On("getAllPlayers", (response) => {OnGetAllPlayers(response);});
         socket.On("createMap", (response) => {OnCreateMap(response);});
-
         socket.On("joinGame", (response) => {OnJoinGame(response);});
+        socket.On("disconnectPlayer", (response) => {OnDisconnectPlayer(response);});
+
         socket.On("addPlayer", (response) => {OnAddPlayer(response);});
         socket.On("moves", (response) => {OnMovePlayer(response);});
         socket.On("rotates", (response) => {OnRotatePlayer(response);});
         socket.On("shoot", (response) => {OnShoot(response);});
         socket.On("hit", (response) => {OnHit(response);});
         socket.On("throwGrenade", (response) => {OnThrowGrenade(response);});
+    }
+
+    public void OnApplicationQuit(){
+        socket.Emit("disconnectPlayer", JsonUtility.ToJson(localPlayer));
     }
 
     //ON Events
@@ -90,30 +89,10 @@ public class NetworkManager : MonoBehaviour
     void OnCreateMap (SocketIOResponse response){
         Debug.Log(response.ToString());
         MapDTO mapInstance = MapDTO.CreateFromJSON(response);
-        /*Debug.Log (mapInstance);
-        Debug.Log (mapInstance.cells[0][0].right);
-        Debug.Log (mapInstance.cells[0][0].left);
-        Debug.Log (mapInstance.cells[0][0].up);
-        Debug.Log (mapInstance.cells[0][0].down);*/
         int sizeX = mapInstance.sizeX;
         int sizeY = mapInstance.sizeY;
 
         UnityThread.executeInUpdate(() => {
-            /*for (int x = 0; x < sizeX; x++){
-                for (int y = 0; y < sizeY; y++){
-                    Vector2 posicionCelda = new Vector2 ((x -(sizeX / 2f)) * celdaPrefab.transform.localScale.x, (y - (sizeY / 2f)) * celdaPrefab.transform.localScale.y);
-                    CeldaController celda = Instantiate(celdaPrefab, posicionCelda, Quaternion.identity, laberinto);
-                    celda.name = $"[{x+1};{y+1}]";
-                    if (!mapInstance.cells[x][y].right)
-                        celda.GetComponent<CeldaController>().eliminarMuro(0);
-                    if (!mapInstance.cells[x][y].left)
-                        celda.GetComponent<CeldaController>().eliminarMuro(1);
-                    if (!mapInstance.cells[x][y].up)
-                        celda.GetComponent<CeldaController>().eliminarMuro(2);
-                    if (!mapInstance.cells[x][y].down)
-                        celda.GetComponent<CeldaController>().eliminarMuro(3);
-                }
-            }*/
             laberinto.gameObject.GetComponent<GeneradorLaberinto>().generateMaze(mapInstance);
         });
     }
@@ -127,7 +106,16 @@ public class NetworkManager : MonoBehaviour
     void OnJoinGame (SocketIOResponse response){
         PlayerDTO playerInstance = PlayerDTO.CreateFromJSON(response);
         CreatePlayerGameObject(playerInstance, true);
+        localPlayer = playerInstance;
     }
+    void OnDisconnectPlayer (SocketIOResponse response){
+        PlayerDTO playerInstance = PlayerDTO.CreateFromJSON(response);
+        Transform o = jugadores.Find(playerInstance.id) as Transform;
+        if (o == null)  return;
+        GameObject playerGO = o.gameObject;
+        Destroy(playerGO);
+    }
+
     void OnAddPlayer (SocketIOResponse response){
         PlayerDTO playerInstance = PlayerDTO.CreateFromJSON(response);
         CreatePlayerGameObject(playerInstance, false);

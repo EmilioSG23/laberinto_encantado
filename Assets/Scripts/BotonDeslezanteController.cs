@@ -1,6 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEditor.Experimental.GraphView;
+//using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -11,7 +11,7 @@ public class BotonDeslizante : MonoBehaviour, IPointerDownHandler, IDragHandler,
     private Vector2 endPoint;
     private bool isDragging = false;
 
-    public Image botonImage;  // Componente de la imagen del botón
+    public Image botonImage;  // Componente de la imagen del botï¿½n  
 
     public Sprite BotonGranada;     // Imagen para disparar
     public Sprite BotonArma;      // Imagen para lanzar granada
@@ -38,7 +38,7 @@ public class BotonDeslizante : MonoBehaviour, IPointerDownHandler, IDragHandler,
         if (isDragging)
         {
             endPoint = eventData.position;
-            CambiarImagen(endPoint - startPoint);  // Cambiar la imagen según la dirección
+            CambiarImagen(endPoint - startPoint);  // Cambiar la imagen segï¿½n la direcciï¿½n
         }
     }
 
@@ -85,7 +85,7 @@ public class BotonDeslizante : MonoBehaviour, IPointerDownHandler, IDragHandler,
 
     private void CambiarImagen(Vector2 direction)
     {
-        // Cambiar la imagen dependiendo de la dirección del deslizamiento
+        // Cambiar la imagen dependiendo de la direcciï¿½n del deslizamiento
         if (Mathf.Abs(direction.x) > Mathf.Abs(direction.y))
         {
             if (direction.x > 0)
