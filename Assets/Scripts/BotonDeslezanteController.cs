@@ -25,6 +25,7 @@ public class BotonDeslizante : MonoBehaviour, IPointerDownHandler, IDragHandler,
         {
             botonImage = GetComponent<Image>();
         }
+        botonImage.sprite = BotonArma;
     }
 
     public void OnPointerDown(PointerEventData eventData)
@@ -83,7 +84,7 @@ public class BotonDeslizante : MonoBehaviour, IPointerDownHandler, IDragHandler,
         }
     }
 
-    private void CambiarImagen(Vector2 direction)
+    public void CambiarImagen(Vector2 direction)
     {
         // Cambiar la imagen dependiendo de la direcci�n del deslizamiento
         if (Mathf.Abs(direction.x) > Mathf.Abs(direction.y))

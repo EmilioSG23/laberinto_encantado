@@ -109,7 +109,7 @@ public class PlayerController : MonoBehaviour
         }
         //GREEN
         if (colorTeam == 2){
-            textTeamID.color = Color.black;
+            textTeamID.color = Color.white;
             transform.GetComponent<SpriteRenderer>().color = Color.green;
         }
         //YELLOW
@@ -131,13 +131,13 @@ public class PlayerController : MonoBehaviour
     }
 
     private void MovimientoPC(){
-        joystick.SetActive(false);
+        //joystick.SetActive(false);
         Horizontal = Input.GetAxisRaw("Horizontal");
         Vertical = Input.GetAxisRaw("Vertical");
     }
 
     private void MovimientoMovil(){
-        joystick.SetActive(true);
+        //joystick.SetActive(true);
         Horizontal = joystick.GetComponent<Joystick>().Horizontal;
         Vertical = joystick.GetComponent<Joystick>().Vertical;
 
@@ -157,12 +157,16 @@ public class PlayerController : MonoBehaviour
     }
 
     public void Disparar(){
+        if(parado || !isLocalPlayer)
+            return;
         GameObject bala = Instantiate (BalaPrefab, transform.position + (Vector3) ultimaDireccion * 0.15f, Quaternion.identity);
         bala.GetComponent<BalaController>().setDireccion(ultimaDireccion);
         bala.GetComponent<BalaController>().setJugador(gameObject);
     }
 
     public void ThrowGrenade(){
+        if(parado || !isLocalPlayer)
+            return;
         GameObject grenade = Instantiate (GreanadePrefab, transform.position + (Vector3) ultimaDireccion * 0.15f, Quaternion.identity);
         grenade.GetComponent<GrenadeController>().setDireccion(ultimaDireccion);
         grenade.GetComponent<GrenadeController>().setJugador(gameObject);

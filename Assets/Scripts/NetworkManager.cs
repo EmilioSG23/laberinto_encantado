@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using SocketIOClient;
 using SocketIOClient.Transport;
 using TMPro;
@@ -11,6 +12,9 @@ public class NetworkManager : MonoBehaviour
     public static SocketIOUnity socket;
     public Transform jugadores;
     public Transform laberinto;
+    public GameObject playerUI;
+    public TMP_Text teamPlayerID;
+    public TMP_Text username;
     public CeldaController celdaPrefab;
     public GameObject jugadorPrefab;
     public GameObject BalaPrefab;
@@ -81,7 +85,7 @@ public class NetworkManager : MonoBehaviour
         GameDTO gameInstance = GameDTO.CreateFromJSON(response);
         foreach (TeamDTO team in gameInstance.teams){
             foreach (PlayerDTO player in team.players){
-                CreatePlayerGameObject(player, false);
+                CreatePlayerGameObject(player, false, false);
             }
         }
     }
@@ -103,24 +107,19 @@ public class NetworkManager : MonoBehaviour
     void OnEndGame(SocketIOResponse response){
         
     }
+
     void OnJoinGame (SocketIOResponse response){
         PlayerDTO playerInstance = PlayerDTO.CreateFromJSON(response);
-        CreatePlayerGameObject(playerInstance, true);
+        CreatePlayerGameObject(playerInstance, true, true);
         localPlayer = playerInstance;
-    }
-    void OnDisconnectPlayer (SocketIOResponse response){
-        PlayerDTO playerInstance = PlayerDTO.CreateFromJSON(response);
-        Transform o = jugadores.Find(playerInstance.id) as Transform;
-        if (o == null)  return;
-        GameObject playerGO = o.gameObject;
-        Destroy(playerGO);
+        initPlayerIndicator (playerInstance.name, playerInstance.numberInTeam, playerInstance.colorTeam);
     }
 
     void OnAddPlayer (SocketIOResponse response){
         PlayerDTO playerInstance = PlayerDTO.CreateFromJSON(response);
-        CreatePlayerGameObject(playerInstance, false);
+        CreatePlayerGameObject(playerInstance, false, true);
     }
-    private void CreatePlayerGameObject (PlayerDTO playerInstance, bool localPlayer){
+    private void CreatePlayerGameObject (PlayerDTO playerInstance, bool localPlayer, bool inSpawnpoint){
         if (playerInstance.health <= 0)
             return;
         UnityThread.executeInUpdate(() => {
@@ -132,9 +131,47 @@ public class NetworkManager : MonoBehaviour
             playerGO.GetComponent<PlayerController>().initPlayerGameObject (playerInstance);
 
             Transform c = laberinto.Find (playerInstance.spawnpoint) as Transform;
-            if (c != null)
+            if (c != null && inSpawnpoint){
                 playerGO.transform.localPosition = new Vector2 (c.position.x, c.position.y);
+                playerInstance.updateCoords (c.position.x, c.position.y);
+                socket.Emit("moves", JsonUtility.ToJson(playerInstance));
+            }
         });
+    }
+
+    private void initPlayerIndicator (string name, int numberInTeam, int colorTeam){
+        UnityThread.executeInUpdate (() => {
+            teamPlayerID.text = numberInTeam.ToString();
+            username.text = name;
+            //RED
+            if (colorTeam == 0){
+                teamPlayerID.color = Color.white;
+                playerUI.GetComponent<Image>().color = Color.red;
+            }
+            //BLUE
+            if (colorTeam == 1){
+                teamPlayerID.color = Color.white;
+                playerUI.GetComponent<Image>().color = Color.blue;
+            }
+            //GREEN
+            if (colorTeam == 2){
+                teamPlayerID.color = Color.white;
+                playerUI.GetComponent<Image>().color = Color.green;
+            }
+            //YELLOW
+            if (colorTeam == 3){
+                teamPlayerID.color = Color.black;
+                playerUI.GetComponent<Image>().color = Color.yellow;
+            }
+        });
+    }
+
+    void OnDisconnectPlayer (SocketIOResponse response){
+        PlayerDTO playerInstance = PlayerDTO.CreateFromJSON(response);
+        Transform o = jugadores.Find(playerInstance.id) as Transform;
+        if (o == null)  return;
+        GameObject playerGO = o.gameObject;
+        Destroy(playerGO);
     }
     
     void OnMovePlayer (SocketIOResponse response){
