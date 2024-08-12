@@ -33,8 +33,8 @@ public class NetworkManager : MonoBehaviour
         });
         socket.OnConnected += (sender, e) => {
             Debug.Log ($"Conectado a {uri}");
-            socket.Emit("joinGame", JsonUtility.ToJson(new PlayerDTO("EmilioSG23", 125.0f, 120.0f, 2, 1)));
             socket.Emit("init");
+            socket.Emit("joinGame", JsonUtility.ToJson(new PlayerDTO("EmilioSG23", 0)));
             //socket.Emit("createMap", JsonUtility.ToJson(new MapDTO (15, 15, 1, 1)));
         };
 
@@ -87,7 +87,7 @@ public class NetworkManager : MonoBehaviour
     }
 
     void OnCreateMap (SocketIOResponse response){
-        Debug.Log(response.ToString());
+        //Debug.Log(response.ToString());
         MapDTO mapInstance = MapDTO.CreateFromJSON(response);
         int sizeX = mapInstance.sizeX;
         int sizeY = mapInstance.sizeY;
@@ -127,8 +127,13 @@ public class NetworkManager : MonoBehaviour
             Transform o = jugadores.Find(playerInstance.id) as Transform;
             if (o != null)  return;
             GameObject playerGO = Instantiate(jugadorPrefab, jugadores);
-            playerGO.GetComponent<PlayerController>().initPlayerGameObject (playerInstance);
+            playerGO.GetComponent<PlayerController>().parado = true;
             playerGO.GetComponent<PlayerController>().isLocalPlayer = localPlayer;
+            playerGO.GetComponent<PlayerController>().initPlayerGameObject (playerInstance);
+
+            Transform c = laberinto.Find (playerInstance.spawnpoint) as Transform;
+            if (c != null)
+                playerGO.transform.localPosition = new Vector2 (c.position.x, c.position.y);
         });
     }
     
@@ -248,8 +253,9 @@ public class NetworkManager : MonoBehaviour
         public int colorTeam;
         public int granade;
         public int health;
+        public string spawnpoint;
 
-        public PlayerDTO (string _id, string _name, int _numberInTeam, float _coordinateX, float _coordinateY, int _lookingAt, int _colorTeam, int _granade, int _health){
+        public PlayerDTO (string _id, string _name, int _numberInTeam, float _coordinateX, float _coordinateY, int _lookingAt, int _colorTeam, int _granade, int _health, string _spawnpoint){
             id = _id;
             name = _name;
             numberInTeam = _numberInTeam;
@@ -257,10 +263,11 @@ public class NetworkManager : MonoBehaviour
             coordinateY = _coordinateY;
             lookingAt = _lookingAt;
             colorTeam = _colorTeam;
+            spawnpoint = _spawnpoint;
         }
-        public PlayerDTO (string _id, string _name, Vector2 _position, int _lookingAt, int _colorTeam):this(_id, _name, 0, _position.x, _position.y, _lookingAt, _colorTeam, 3, 5){}
-        public PlayerDTO (string _name, float _coordinateX, float _coordinateY, int _lookingAt, int _colorTeam):this("", _name, 0, _coordinateX, _coordinateY, _lookingAt, _colorTeam, 3, 5){}
-        public PlayerDTO (string _id, string _name, int _colorTeam):this(_id,_name, 0,0.0f,0.0f, 2,_colorTeam, 3, 5){}
+        public PlayerDTO (string _id, string _name, Vector2 _position, int _lookingAt, int _colorTeam):this(_id, _name, 0, _position.x, _position.y, _lookingAt, _colorTeam, 3, 5, ""){}
+        public PlayerDTO (string _name, float _coordinateX, float _coordinateY, int _lookingAt, int _colorTeam):this("", _name, 0, _coordinateX, _coordinateY, _lookingAt, _colorTeam, 3, 5, ""){}
+        public PlayerDTO (string _id, string _name, int _colorTeam):this(_id,_name, 0,0.0f,0.0f, 2,_colorTeam, 3, 5, ""){}
         public PlayerDTO (string _name, int _colorTeam):this("", _name, _colorTeam){}
 
         public void updateCoords(Vector2 position){
