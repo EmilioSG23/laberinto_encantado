@@ -8,7 +8,7 @@ public class PlayerController : MonoBehaviour
     public TMP_Text textTeamID;
     public GameObject BalaPrefab;
     public GameObject GreanadePrefab;
-    private Joystick joystick;
+    public Joystick joystick;
     
     [HideInInspector]
     public NetworkManager.PlayerDTO playerDTO;
@@ -89,7 +89,7 @@ public class PlayerController : MonoBehaviour
                 Disparar();
             }
             else if (weapon == 1){
-                if (playerDTO != null){
+                if (playerDTO.id != ""){
                     if(playerDTO.granade > 0){
                         NetworkManager.socket.Emit("throwGrenade", JsonUtility.ToJson(playerDTO));
                         ThrowGrenade();

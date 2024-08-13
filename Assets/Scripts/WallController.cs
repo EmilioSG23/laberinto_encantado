@@ -16,8 +16,7 @@ public class WallController : MonoBehaviour
         if(isExitDoor){
             PlayerController player = o.gameObject.GetComponent<PlayerController>();
             if (player.playerDTO.colorTeam == team && player.isLocalPlayer){
-                //Emit WIN
-                Debug.Log($"Team {team} won the game!");
+                NetworkManager.socket.Emit ("endGame", JsonUtility.ToJson(player.playerDTO));
             }
         }
     }

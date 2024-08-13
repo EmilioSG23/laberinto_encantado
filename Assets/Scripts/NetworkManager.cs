@@ -15,6 +15,8 @@ public class NetworkManager : MonoBehaviour
     public GameObject playerUI;
     public TMP_Text teamPlayerID;
     public TMP_Text username;
+    public Image lifebar;
+    public Sprite[] lifebarSprites = new Sprite[6];
     public FixedJoystick joystick;
     public CeldaController celdaPrefab;
     public GameObject jugadorPrefab;
@@ -38,7 +40,6 @@ public class NetworkManager : MonoBehaviour
         });
         socket.OnConnected += (sender, e) => {
             Debug.Log ($"Conectado a {uri}");
-            socket.Emit("init");
             socket.Emit("joinGame", JsonUtility.ToJson(new PlayerDTO("EmilioSG23", 0)));
             //socket.Emit("createMap", JsonUtility.ToJson(new MapDTO (15, 15, 1, 1)));
         };
@@ -48,8 +49,9 @@ public class NetworkManager : MonoBehaviour
         };
 
         socket.Connect();
-        socket.On("init", (response => {OnInit(response);}));
+        socket.On("init", (response) => {OnInit();});
         socket.On("message", (response) => {OnMessage(response);});
+        socket.On("numberParticipants", (response) => {OnNumberParticipants(response);});
         socket.On("gameState", (response) => {OnGameState(response);});
         socket.On("leftTime", (response) => {OnTimeLeft(response);});
         socket.On("endGame", (response) => {OnEndGame(response);});
@@ -74,8 +76,18 @@ public class NetworkManager : MonoBehaviour
     void OnMessage (SocketIOResponse response){
         Debug.Log(response.GetValue<string>());
     }
-    void OnInit (SocketIOResponse response){
-        //TODO se inicia la partida desde aquí
+    void OnInit (){
+        UnityThread.executeInUpdate(() => {
+            ControlJuego.instance.initGame(false);
+        });
+    }
+    void OnNumberParticipants (SocketIOResponse response){
+        int numberParticipants = response.GetValue<int>();
+        UnityThread.executeInUpdate (() => {
+            ControlJuego.instance.receiveNumberParticipants(numberParticipants);
+            if (numberParticipants == 1)
+                ControlJuego.instance.initAdminPanel();
+        });
     }
     void OnGameState (SocketIOResponse response){
         //Debug.Log(response.ToString());
@@ -103,10 +115,15 @@ public class NetworkManager : MonoBehaviour
     }
     void OnTimeLeft(SocketIOResponse response){
         int timeLeft = response.GetValue<int>();
-        timer.text = timeLeft.ToString();
+        UnityThread.executeInUpdate(() => {
+            timer.text = (timeLeft/1000).ToString();
+        });
     }
     void OnEndGame(SocketIOResponse response){
-        
+        UnityThread.executeInUpdate(() => {
+            int winnerTeam = response.GetValue<int>();
+            ControlJuego.instance.endGame (winnerTeam);
+        });
     }
 
     void OnJoinGame (SocketIOResponse response){
@@ -164,6 +181,7 @@ public class NetworkManager : MonoBehaviour
                 teamPlayerID.color = Color.black;
                 playerUI.GetComponent<Image>().color = Color.yellow;
             }
+            ControlJuego.instance.initGamePanel();
         });
     }
 
@@ -223,6 +241,8 @@ public class NetworkManager : MonoBehaviour
             GameObject playerGO = o.gameObject;
             //if (playerGO.GetComponent<PlayerController>().isLocalPlayer)    return;
             playerGO.GetComponent<PlayerController>().playerDTO.substractHealth();
+            if (playerInstance.id == localPlayer.id)
+                lifebar.sprite = lifebarSprites [5 - playerInstance.health];
             if (playerGO.GetComponent<PlayerController>().playerDTO.health <= 0)
                 playerGO.GetComponent<PlayerController>().Death();
         });
