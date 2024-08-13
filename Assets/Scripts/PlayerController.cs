@@ -8,7 +8,8 @@ public class PlayerController : MonoBehaviour
     public TMP_Text textTeamID;
     public GameObject BalaPrefab;
     public GameObject GreanadePrefab;
-    public GameObject joystick;
+    private Joystick joystick;
+    
     [HideInInspector]
     public NetworkManager.PlayerDTO playerDTO;
 
@@ -42,10 +43,31 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        if(parado || !isLocalPlayer)
+        if(parado || !isLocalPlayer || joystick == null)
             return;
-       MovimientoPC();
-       //MovimientoMovil();
+
+        if (Mathf.Abs(Input.GetAxisRaw ("Horizontal")) > Mathf.Abs(joystick.GetComponent<Joystick>().Horizontal))
+            Horizontal = Input.GetAxisRaw ("Horizontal");
+        else
+            Horizontal = joystick.GetComponent<Joystick>().Horizontal;
+
+        if (Mathf.Abs(Input.GetAxisRaw ("Vertical")) > Mathf.Abs(joystick.GetComponent<Joystick>().Vertical))
+            Vertical = Input.GetAxisRaw ("Vertical");
+        else
+            Vertical = joystick.GetComponent<Joystick>().Vertical;
+
+        if (Mathf.Abs(Horizontal) > 0.1f || Mathf.Abs(Vertical) > 0.1f) {
+            float angle = Mathf.Atan2(Vertical, Horizontal) * Mathf.Rad2Deg;
+            if (angle < 0) angle += 360;
+            float snappedAngle = Mathf.Round(angle / 45f) * 45f;
+            float snappedAngleRad = snappedAngle * Mathf.Deg2Rad;
+            float x = Mathf.Cos(snappedAngleRad);
+            float y = Mathf.Sin(snappedAngleRad);
+
+            Horizontal = x;Vertical = y;
+        } else {
+            Horizontal = 0f;Vertical = 0f;
+        }
 
         if (Mathf.Abs (Horizontal) > Mathf.Abs (Vertical))
             direccion = new Vector2 (Horizontal, 0).normalized;
@@ -85,7 +107,7 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    public void initPlayerGameObject(NetworkManager.PlayerDTO playerInstance){
+    public void initPlayerGameObject(NetworkManager.PlayerDTO playerInstance, Joystick joystick){
         gameObject.transform.localPosition = new Vector2(playerInstance.coordinateX, playerInstance.coordinateY);
         gameObject.transform.rotation = Quaternion.identity;
         gameObject.name = playerInstance.id;
@@ -93,6 +115,8 @@ public class PlayerController : MonoBehaviour
         parado = true;
         playerDTO = playerInstance;
         ultimaDireccion = lookingAtVector(playerInstance.lookingAt);
+        if (isLocalPlayer)
+            this.joystick = joystick;
     }
 
     private void initTeamIndicator(int numberInTeam, int colorTeam){
@@ -128,21 +152,6 @@ public class PlayerController : MonoBehaviour
             return Vector2.right;
         else
             return Vector2.left;
-    }
-
-    private void MovimientoPC(){
-        //joystick.SetActive(false);
-        Horizontal = Input.GetAxisRaw("Horizontal");
-        Vertical = Input.GetAxisRaw("Vertical");
-    }
-
-    private void MovimientoMovil(){
-        //joystick.SetActive(true);
-        Horizontal = joystick.GetComponent<Joystick>().Horizontal;
-        Vertical = joystick.GetComponent<Joystick>().Vertical;
-
-        //if (Horizontal > 0.0f) Horizontal = 0.5f;
-        //if (Vertical > 0.0f) Vertical = 0.5f;
     }
 
     private void ChangeWeapon(){

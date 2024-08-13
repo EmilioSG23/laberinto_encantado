@@ -15,6 +15,7 @@ public class NetworkManager : MonoBehaviour
     public GameObject playerUI;
     public TMP_Text teamPlayerID;
     public TMP_Text username;
+    public FixedJoystick joystick;
     public CeldaController celdaPrefab;
     public GameObject jugadorPrefab;
     public GameObject BalaPrefab;
@@ -128,7 +129,7 @@ public class NetworkManager : MonoBehaviour
             GameObject playerGO = Instantiate(jugadorPrefab, jugadores);
             playerGO.GetComponent<PlayerController>().parado = true;
             playerGO.GetComponent<PlayerController>().isLocalPlayer = localPlayer;
-            playerGO.GetComponent<PlayerController>().initPlayerGameObject (playerInstance);
+            playerGO.GetComponent<PlayerController>().initPlayerGameObject (playerInstance, this.joystick);
 
             Transform c = laberinto.Find (playerInstance.spawnpoint) as Transform;
             if (c != null && inSpawnpoint){
