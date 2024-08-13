@@ -243,8 +243,11 @@ public class NetworkManager : MonoBehaviour
             playerGO.GetComponent<PlayerController>().playerDTO.substractHealth();
             if (playerInstance.id == localPlayer.id)
                 lifebar.sprite = lifebarSprites [5 - playerInstance.health];
-            if (playerGO.GetComponent<PlayerController>().playerDTO.health <= 0)
+            if (playerGO.GetComponent<PlayerController>().playerDTO.health <= 0){
                 playerGO.GetComponent<PlayerController>().Death();
+                if (playerInstance.id == localPlayer.id)
+                    ControlJuego.instance.showDeathPanel(playerInstance.colorTeam);
+            }
         });
     }
     void OnThrowGrenade (SocketIOResponse response){

@@ -166,16 +166,12 @@ public class PlayerController : MonoBehaviour
     }
 
     public void Disparar(){
-        if(parado || !isLocalPlayer)
-            return;
         GameObject bala = Instantiate (BalaPrefab, transform.position + (Vector3) ultimaDireccion * 0.15f, Quaternion.identity);
         bala.GetComponent<BalaController>().setDireccion(ultimaDireccion);
         bala.GetComponent<BalaController>().setJugador(gameObject);
     }
 
     public void ThrowGrenade(){
-        if(parado || !isLocalPlayer)
-            return;
         GameObject grenade = Instantiate (GreanadePrefab, transform.position + (Vector3) ultimaDireccion * 0.15f, Quaternion.identity);
         grenade.GetComponent<GrenadeController>().setDireccion(ultimaDireccion);
         grenade.GetComponent<GrenadeController>().setJugador(gameObject);
@@ -187,7 +183,7 @@ public class PlayerController : MonoBehaviour
             Death();
     }
 
-    public void Death(){
+    public void Death (){
         //TODO Emit
         Destroy (gameObject);
     }

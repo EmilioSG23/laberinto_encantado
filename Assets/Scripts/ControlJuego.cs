@@ -25,6 +25,9 @@ public class ControlJuego : MonoBehaviour
     public GameObject panelEndgame;
     public TMP_Text winnerText;
     public GameObject[] team;
+
+    public GameObject panelDeath;
+    public GameObject playerDeathSprite;
     
     private int countdown = 3;
 
@@ -59,8 +62,12 @@ public class ControlJuego : MonoBehaviour
     }
 
     public void initGame (bool isAdmin){
+        if (isAdmin){
+            NetworkManager.socket.Emit ("init");
+            return;
+        }
         waitRoomGO.SetActive (false);
-        StartCoroutine (iniciarCountdown(isAdmin));
+        StartCoroutine (iniciarCountdown());
     }
 
     public void endGame (int colorWinner){
@@ -104,10 +111,25 @@ public class ControlJuego : MonoBehaviour
         }
     }
 
-    private IEnumerator iniciarCountdown(bool isAdmin){
-        if (isAdmin){
-            NetworkManager.socket.Emit ("init");
-        }
+    public void showDeathPanel (int color){
+        panels.SetActive (true);
+        panelDeath.SetActive (true);
+        if (color == 0)
+            playerDeathSprite.GetComponent<Image>().color = Color.red;
+        if (color == 1)
+            playerDeathSprite.GetComponent<Image>().color = Color.blue;
+        if (color == 2)
+            playerDeathSprite.GetComponent<Image>().color = Color.green;
+        if (color == 3)
+            playerDeathSprite.GetComponent<Image>().color = Color.yellow;
+    }
+
+    public void closeDeathPanel(){
+        panelDeath.SetActive (false);
+        panels.SetActive (false);
+    }
+
+    private IEnumerator iniciarCountdown(){
         countdownGO.SetActive (true);
         while (countdown > 0){
             texto.text = countdown.ToString();
