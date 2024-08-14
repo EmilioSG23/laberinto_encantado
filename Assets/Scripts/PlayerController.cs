@@ -13,7 +13,7 @@ public class PlayerController : MonoBehaviour
     [HideInInspector]
     public NetworkManager.PlayerDTO playerDTO;
 
-    public float Velocidad = 5;
+    public float Velocidad = 75;
 
     public float cooldownTiro = 0.25f;
     public float cooldownGranade = 1.00f;
@@ -36,7 +36,6 @@ public class PlayerController : MonoBehaviour
 
     void Start()
     {
-        //ultimaDireccion = Vector2.right;
         position = new Vector2(gameObject.transform.position.x, gameObject.transform.position.y);
         cooldown = cooldownTiro;
     }
@@ -193,6 +192,12 @@ public class PlayerController : MonoBehaviour
         //Debug.Log($"{gameObject} tiene {kills} kills");
     }
 
+    public void Stop(){
+        parado = true;
+        Horizontal = 0f;
+        Vertical = 0f;
+    }
+
     public void actualizarDireccion(Vector2 direccion){
         ultimaDireccion = direccion;
          if (direccion == Vector2.up){
@@ -231,15 +236,8 @@ public class PlayerController : MonoBehaviour
         if (newPosition.x != position.x || newPosition.y != position.y){
             position = newPosition;
             playerDTO.updateCoords(position);
-            //NetworkManager.EmitMovePlayer(playerDTO);
             //Debug.Log($"X: {playerDTO.coordinateX} Y: {playerDTO.coordinateY}");
             NetworkManager.socket.Emit("moves", JsonUtility.ToJson(playerDTO));
         }
-    }
-
-    private void OnCollisionEnter2D(Collision2D colision){
-        if(parado || !isLocalPlayer)
-            return;
-        //Debug.Log(colision);
     }
 }

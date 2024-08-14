@@ -45,19 +45,19 @@ public class CeldaController : MonoBehaviour
     public void prepareSpawnPoint (int color){
         //RED
         if (color == 0){
-            Fondo.GetComponent<SpriteRenderer>().color = new Color (255f/255f, 0f/255f, 0f/255f, 96f/255);
+            Fondo.GetComponent<SpriteRenderer>().color = new Color (255f/255f, 0f/255f, 0f/255f, 48f/255);
         }
         //BLUE
         if (color == 1){
-            Fondo.GetComponent<SpriteRenderer>().color = new Color (0f/255f, 0f/255f, 255f/255f, 96f/255);
+            Fondo.GetComponent<SpriteRenderer>().color = new Color (0f/255f, 0f/255f, 255f/255f, 48f/255);
         }
         //GREEN
         if (color == 2){
-            Fondo.GetComponent<SpriteRenderer>().color = new Color (0f/255f, 255f/255f, 0f/255f, 96f/255);
+            Fondo.GetComponent<SpriteRenderer>().color = new Color (0f/255f, 255f/255f, 0f/255f, 48f/255);
         }
         //YELLOW
         if (color == 3){
-            Fondo.GetComponent<SpriteRenderer>().color = new Color (255f/255f, 255f/255f, 0f/255f, 96f/255);
+            Fondo.GetComponent<SpriteRenderer>().color = new Color (255f/255f, 255f/255f, 0f/255f, 48f/255);
         }
     }
     public void destroySpawnPointWall(int cellIndex){

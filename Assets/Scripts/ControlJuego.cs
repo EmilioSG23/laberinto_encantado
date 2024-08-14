@@ -38,11 +38,6 @@ public class ControlJuego : MonoBehaviour
             Destroy(gameObject);
     }
 
-    private void Start()
-    {
-        
-    }
-
     public void initGamePanel(){
         panels.SetActive (true);
         waitRoomGO.SetActive (true);
@@ -72,15 +67,11 @@ public class ControlJuego : MonoBehaviour
 
     public void endGame (int colorWinner){
         panels.SetActive (true);
+        panelDeath.SetActive (false);
         panelEndgame.SetActive (true);
-        foreach (Transform jugador in jugadores)
-            jugador.gameObject.GetComponent<PlayerController>().parado = true;
-            
-        //No winner
-        if (colorWinner == -1){
-            winnerText.text = "Empate";
+        foreach (Transform jugador in jugadores){
+            jugador.gameObject.GetComponent<PlayerController>().Stop();
         }
-
         //RED
         if (colorWinner == 0){
             winnerText.text = "¡Equipo ROJO!";
@@ -89,25 +80,28 @@ public class ControlJuego : MonoBehaviour
                 playerSprite.GetComponent<Image>().color = Color.red;
         }
         //BLUE
-        if (colorWinner == 1){
+        else if (colorWinner == 1){
             winnerText.text = "¡Equipo AZUL!";
             winnerText.color = Color.blue;
             foreach (GameObject playerSprite in team)
                 playerSprite.GetComponent<Image>().color = Color.blue;
         }
         //GREEN
-        if (colorWinner == 2){
+        else if (colorWinner == 2){
             winnerText.text = "¡Equipo VERDE!";
             winnerText.color = Color.green;
             foreach (GameObject playerSprite in team)
                 playerSprite.GetComponent<Image>().color = Color.green;
         }
         //YELLOW
-        if (colorWinner == 3){
+        else if (colorWinner == 3){
             winnerText.text = "¡Equipo AMARILLO!";
             winnerText.color = Color.yellow;
             foreach (GameObject playerSprite in team)
                 playerSprite.GetComponent<Image>().color = Color.yellow;
+        }
+        else{
+            winnerText.text = "Empate";
         }
     }
 

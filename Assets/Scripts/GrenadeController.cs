@@ -6,7 +6,7 @@ public class GrenadeController : MonoBehaviour
 {
     public GameObject explosionEffect;
 
-    public float Velocidad = 100;
+    public float Velocidad = 175;
     public float radioExplosion = 20;
     private Rigidbody2D Rigidbody2D;
     private GameObject jugador;
