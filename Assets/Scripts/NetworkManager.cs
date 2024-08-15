@@ -25,9 +25,9 @@ public class NetworkManager : MonoBehaviour
     public TMP_Text timer;
 
     private PlayerDTO localPlayer;
-    private string uri = "http://localhost:8000/game";
+    //private string uri = "http://localhost:8000/game";
     //private string uri = "https://laberinto-encantado-backend.onrender.com/game";
-    //private string uri = "https://laberinto-encantado-backend-k2qp.onrender.com/game";
+    private string uri = "https://laberinto-encantado-backend-k2qp.onrender.com/game";
 
     void Awake(){
         if (instance == null)
