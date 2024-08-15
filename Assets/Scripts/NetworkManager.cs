@@ -18,6 +18,7 @@ public class NetworkManager : MonoBehaviour
     public Image lifebar;
     public Sprite[] lifebarSprites = new Sprite[6];
     public FixedJoystick joystick;
+    public WeaponButtonController weaponButton;
     public CeldaController celdaPrefab;
     public GameObject jugadorPrefab;
     public GameObject BalaPrefab;
@@ -26,6 +27,7 @@ public class NetworkManager : MonoBehaviour
     private PlayerDTO localPlayer;
     private string uri = "http://localhost:8000/game";
     //private string uri = "https://laberinto-encantado-backend.onrender.com/game";
+    //private string uri = "https://laberinto-encantado-backend-k2qp.onrender.com/game";
 
     void Awake(){
         if (instance == null)
@@ -46,13 +48,15 @@ public class NetworkManager : MonoBehaviour
         };
 
         socket.OnDisconnected += (sender, e) => {
-            socket.Emit("disconnectPlayer", JsonUtility.ToJson(localPlayer));
+            if (localPlayer != null)
+                socket.Emit("disconnectPlayer", JsonUtility.ToJson(localPlayer));
         };
 
         socket.Connect();
         socket.On("init", (response) => {OnInit();});
         socket.On("message", (response) => {OnMessage(response);});
         socket.On("numberParticipants", (response) => {OnNumberParticipants(response);});
+        socket.On("isStarted", (response) => {OnIsStarted(response);});
         socket.On("admin", (response) => {OnAdmin();});
         socket.On("leftTime", (response) => {OnTimeLeft(response);});
         socket.On("endGame", (response) => {OnEndGame(response);});
@@ -70,7 +74,8 @@ public class NetworkManager : MonoBehaviour
     }
 
     public void OnApplicationQuit(){
-        socket.Emit("disconnectPlayer", JsonUtility.ToJson(localPlayer));
+        if (localPlayer != null)
+            socket.Emit("disconnectPlayer", JsonUtility.ToJson(localPlayer));
     }
 
     //ON Events
@@ -81,6 +86,9 @@ public class NetworkManager : MonoBehaviour
         UnityThread.executeInUpdate(() => {
             ControlJuego.instance.initGame(false);
         });
+    }
+    void OnIsStarted(SocketIOResponse response){
+        ControlJuego.instance.isStarted = response.GetValue<bool>();
     }
     void OnNumberParticipants (SocketIOResponse response){
         int numberParticipants = response.GetValue<int>();
@@ -121,6 +129,9 @@ public class NetworkManager : MonoBehaviour
         UnityThread.executeInUpdate(() => {
             int winnerTeam = response.GetValue<int>();
             ControlJuego.instance.endGame (winnerTeam);
+            foreach (Transform jugador in jugadores){
+                jugador.GetComponent<PlayerController>().Stop();
+            }
         });
     }
     void OnJoinGame (SocketIOResponse response){
@@ -141,9 +152,8 @@ public class NetworkManager : MonoBehaviour
             Transform o = jugadores.Find(playerInstance.id) as Transform;
             if (o != null)  return;
             GameObject playerGO = Instantiate(jugadorPrefab, jugadores);
-            playerGO.GetComponent<PlayerController>().parado = true;
             playerGO.GetComponent<PlayerController>().isLocalPlayer = localPlayer;
-            playerGO.GetComponent<PlayerController>().initPlayerGameObject (playerInstance, this.joystick);
+            playerGO.GetComponent<PlayerController>().initPlayerGameObject (playerInstance, this.joystick, this.weaponButton);
 
             Transform c = laberinto.Find (playerInstance.spawnpoint) as Transform;
             if (c != null && inSpawnpoint){
@@ -178,7 +188,8 @@ public class NetworkManager : MonoBehaviour
                 teamPlayerID.color = Color.black;
                 playerUI.GetComponent<Image>().color = Color.yellow;
             }
-            ControlJuego.instance.initGamePanel();
+            if (!ControlJuego.instance.isStarted)
+                ControlJuego.instance.initGamePanel();
         });
     }
 
@@ -192,7 +203,7 @@ public class NetworkManager : MonoBehaviour
         PlayerDTO playerInstance = CreateFromJSON<PlayerDTO>(response);
         UnityThread.executeInUpdate(() => {
             GameObject playerGO = findPlayer (playerInstance);
-            if (playerGO.GetComponent<PlayerController>().isLocalPlayer)    return;
+            if (playerGO == null || playerGO.GetComponent<PlayerController>().isLocalPlayer)    return;
             playerGO.transform.localPosition = new Vector2(playerInstance.coordinateX, playerInstance.coordinateY);
             playerGO.GetComponent<PlayerController>().playerDTO.updateCoords(playerInstance.coordinateX, playerInstance.coordinateY);
         });

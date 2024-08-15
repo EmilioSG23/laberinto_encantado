@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using TMPro;
 
 public class PlayerController : MonoBehaviour
@@ -9,6 +10,7 @@ public class PlayerController : MonoBehaviour
     public GameObject BalaPrefab;
     public GameObject GreanadePrefab;
     public Joystick joystick;
+    public WeaponButtonController weaponButton;
     
     [HideInInspector]
     public NetworkManager.PlayerDTO playerDTO;
@@ -17,7 +19,8 @@ public class PlayerController : MonoBehaviour
 
     public float cooldownTiro = 0.25f;
     public float cooldownGranade = 1.00f;
-    private float cooldown;
+    [HideInInspector]
+    public float cooldown;
     private float Horizontal;
     private float Vertical;
 
@@ -33,6 +36,16 @@ public class PlayerController : MonoBehaviour
     private int kills = 0;
     public bool parado = false;
     public bool isLocalPlayer = false;
+
+    public int getWeapon (){
+        return this.weapon;
+    }
+    public float getLastShoot(){
+        return this.ultimoDisparo;
+    }
+    public float getLastTimeChangeWeapon(){
+        return this.lastTimeChangeWeapon;
+    }
 
     void Start()
     {
@@ -82,40 +95,59 @@ public class PlayerController : MonoBehaviour
 
         if ((Input.GetKey(KeyCode.Space)||(Input.GetMouseButton(0)&&
         (joystick.GetComponent<Joystick>().Horizontal == 0 && joystick.GetComponent<Joystick>().Vertical == 0)))
-        && Time.time > ultimoDisparo + cooldown){
-            if(weapon == 0){
-                NetworkManager.socket.Emit("shoot", JsonUtility.ToJson(playerDTO));
-                Disparar();
-            }
-            else if (weapon == 1){
-                if (playerDTO.id != ""){
-                    if(playerDTO.granade > 0){
-                        NetworkManager.socket.Emit("throwGrenade", JsonUtility.ToJson(playerDTO));
-                        ThrowGrenade();
-                        playerDTO.substractGranade();
-                    }
-                }else
-                    ThrowGrenade();
-            }
-            ultimoDisparo = Time.time;
+         && !weaponButton.IsPointerOverUI()){
+            UseWeapon();
         } 
 
-        if (Input.GetMouseButton(1) && Time.time > lastTimeChangeWeapon + 0.5f){
+        if ((Input.GetMouseButton(1) || Input.GetKey(KeyCode.C))){
             ChangeWeapon();
             lastTimeChangeWeapon = Time.time;
         }
     }
 
-    public void initPlayerGameObject(NetworkManager.PlayerDTO playerInstance, Joystick joystick){
+    public void UseWeapon(){
+        if (Time.time > ultimoDisparo + cooldown){
+            if (weapon == 0){
+                NetworkManager.socket.Emit("shoot", JsonUtility.ToJson(playerDTO));
+                Disparar();
+            }
+            else if (weapon == 1 && playerDTO.granade > 0){
+                NetworkManager.socket.Emit("throwGrenade", JsonUtility.ToJson(playerDTO));
+                ThrowGrenade();
+                playerDTO.substractGranade();
+                weaponButton.amountText.text = playerDTO.granade.ToString();
+            }
+            ultimoDisparo = Time.time;
+        }
+    }
+
+    public void ChangeWeapon(){
+        if (Time.time > lastTimeChangeWeapon + 0.5f){
+            if (weapon == 0){
+                weapon = 1;
+                cooldown = cooldownGranade;
+            }
+            else if (weapon == 1){
+                weapon = 0;
+                cooldown = cooldownTiro;
+            }
+            weaponButton.ChangeWeaponSprite();
+        }
+    }
+
+    public void initPlayerGameObject(NetworkManager.PlayerDTO playerInstance, Joystick joystick, WeaponButtonController weaponButton){
         gameObject.transform.localPosition = new Vector2(playerInstance.coordinateX, playerInstance.coordinateY);
         gameObject.transform.rotation = Quaternion.identity;
         gameObject.name = playerInstance.id;
         initTeamIndicator(playerInstance.numberInTeam, playerInstance.colorTeam);
-        parado = true;
+        parado = !ControlJuego.instance.isStarted;
         playerDTO = playerInstance;
         ultimaDireccion = lookingAtVector(playerInstance.lookingAt);
-        if (isLocalPlayer)
+        if (isLocalPlayer){
             this.joystick = joystick;
+            this.weaponButton = weaponButton;
+            weaponButton.SetPlayer (this.gameObject);
+        }
     }
 
     private void initTeamIndicator(int numberInTeam, int colorTeam){
@@ -151,17 +183,6 @@ public class PlayerController : MonoBehaviour
             return Vector2.right;
         else
             return Vector2.left;
-    }
-
-    private void ChangeWeapon(){
-        if (weapon == 0){
-            weapon = 1;
-            cooldown = cooldownGranade;
-        }
-        else if (weapon == 1){
-            weapon = 0;
-            cooldown = cooldownTiro;
-        }
     }
 
     public void Disparar(){

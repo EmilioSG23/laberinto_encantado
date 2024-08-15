@@ -7,6 +7,8 @@ using TMPro;
 public class ControlJuego : MonoBehaviour
 {
     public static ControlJuego instance;
+    [HideInInspector]
+    public bool isStarted = false;
     public Transform jugadores;
     public GameObject jugadorPrefab;
 
