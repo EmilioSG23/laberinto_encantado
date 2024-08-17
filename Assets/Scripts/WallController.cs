@@ -6,6 +6,7 @@ public class WallController : MonoBehaviour
 {
     private bool isExitDoor = false;
     private int team; //0 red, 1 blue, 2 green, 3 yellow
+    private bool reached = false;
 
     public void initExitDoor (int _team){
         isExitDoor = true;
@@ -13,9 +14,10 @@ public class WallController : MonoBehaviour
     }
 
     private void OnCollisionEnter2D (Collision2D o){
-        if(isExitDoor){
+        if(isExitDoor && !reached){
             PlayerController player = o.gameObject.GetComponent<PlayerController>();
-            if (player.playerDTO.colorTeam == team && player.isLocalPlayer){
+            if (player.playerDTO.colorTeam == team && player.isLocalPlayer && !player.parado){
+                reached = true;
                 NetworkManager.socket.Emit ("endGame", JsonUtility.ToJson(player.playerDTO));
             }
         }

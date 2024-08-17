@@ -8,6 +8,10 @@ public class GeneradorLaberinto : MonoBehaviour
     public Vector2Int tamano;
 
     public void generateMaze (NetworkManager.MapDTO mapInstance){
+        Debug.Log ("generando");
+        foreach (Transform celda in transform){
+            Destroy (celda.gameObject);
+        }
         tamano.x = mapInstance.sizeX;
         tamano.y = mapInstance.sizeY;
         for (int x = 0; x < tamano.x; x++){
@@ -34,6 +38,10 @@ public class GeneradorLaberinto : MonoBehaviour
         List<CeldaController> greenCells = new List<CeldaController>();
         List<CeldaController> blueCells = new List<CeldaController>();
         List<CeldaController> yellowCells = new List<CeldaController>();
+        redCells.Clear();
+        greenCells.Clear();
+        blueCells.Clear();
+        yellowCells.Clear();
         foreach (Transform o in gameObject.transform) {
             CeldaController cell = o.gameObject.GetComponent<CeldaController>();
             string[] parts = o.gameObject.name.Trim('[',']').Split(";");
@@ -44,29 +52,34 @@ public class GeneradorLaberinto : MonoBehaviour
             if ((x == 1 || x == 2) && (y == 1 || y == 2)){
                 cell.prepareSpawnPoint(3);
                 yellowCells.Add(cell);
+                Debug.Log("Añadido a yellowCells: " + o.gameObject.name);
             }
             //Spawnpoint RED
             if ((x == 1 || x == 2) && (y == tamano.y || y == tamano.y - 1)){
                 cell.prepareSpawnPoint(0);
                 redCells.Add(cell);
+                Debug.Log("Añadido a redCells: " + o.gameObject.name);
             }
             //Spawnpoint BLUE
             if ((x == tamano.x || x == tamano.x - 1) && (y == tamano.y || y == tamano.y - 1)){
                 cell.prepareSpawnPoint(1);
                 blueCells.Add(cell);
+                Debug.Log("Añadido a blueCells: " + o.gameObject.name);
             }
             //Spawnpoint GREEN
             if ((x == tamano.x || x == tamano.x - 1) && (y == 1 || y == 2)){
                 cell.prepareSpawnPoint(2);
                 greenCells.Add(cell);
+                Debug.Log("Añadido a greenCells: " + o.gameObject.name);
             }
         }
-        for (int i = 0; i < 4; i++){
-            redCells[i].destroySpawnPointWall(i);
-            greenCells[i].destroySpawnPointWall(i);
-            blueCells[i].destroySpawnPointWall(i);
-            yellowCells[i].destroySpawnPointWall(i);
+        for (int i = 0; i < redCells.Count; i++){
+            redCells[i].destroySpawnPointWall(i%4);
+            greenCells[i].destroySpawnPointWall(i%4);
+            blueCells[i].destroySpawnPointWall(i%4);
+            yellowCells[i].destroySpawnPointWall(i%4);
         }
+        Debug.Log (redCells.Count);
     }
 
     private void setExitDoors(){

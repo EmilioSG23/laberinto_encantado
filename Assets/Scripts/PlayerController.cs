@@ -36,6 +36,8 @@ public class PlayerController : MonoBehaviour
     private int kills = 0;
     public bool parado = false;
     public bool isLocalPlayer = false;
+    public GameObject localIndicator;
+    public Image localIndicatorImage;
 
     public int getWeapon (){
         return this.weapon;
@@ -146,8 +148,15 @@ public class PlayerController : MonoBehaviour
         if (isLocalPlayer){
             this.joystick = joystick;
             this.weaponButton = weaponButton;
+            this.localIndicator.SetActive(true);
             weaponButton.SetPlayer (this.gameObject);
         }
+    }
+
+    public void resetPlayerGameObject (){
+        playerDTO.resetPlayerDTO();
+        if (weaponButton != null)
+            weaponButton.ChangeWeaponSprite();
     }
 
     private void initTeamIndicator(int numberInTeam, int colorTeam){
@@ -156,21 +165,25 @@ public class PlayerController : MonoBehaviour
         if (colorTeam == 0){
             textTeamID.color = Color.white;
             transform.GetComponent<SpriteRenderer>().color = Color.red;
+            localIndicatorImage.GetComponent<Image>().color = Color.red;
         }
         //BLUE
         if (colorTeam == 1){
             textTeamID.color = Color.white;
             transform.GetComponent<SpriteRenderer>().color = Color.blue;
+            localIndicatorImage.GetComponent<Image>().color = Color.blue;
         }
         //GREEN
         if (colorTeam == 2){
             textTeamID.color = Color.white;
             transform.GetComponent<SpriteRenderer>().color = Color.green;
+            localIndicatorImage.GetComponent<Image>().color = Color.green;
         }
         //YELLOW
         if (colorTeam == 3){
             textTeamID.color = Color.black;
             transform.GetComponent<SpriteRenderer>().color = Color.yellow;
+            localIndicatorImage.GetComponent<Image>().color = Color.yellow;
         }
     }
 

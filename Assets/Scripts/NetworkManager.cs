@@ -25,9 +25,9 @@ public class NetworkManager : MonoBehaviour
     public TMP_Text timer;
 
     private PlayerDTO localPlayer;
-    //private string uri = "http://localhost:8000/game";
+    private string uri = "http://localhost:8000/game";
     //private string uri = "https://laberinto-encantado-backend.onrender.com/game";
-    private string uri = "https://laberinto-encantado-backend-k2qp.onrender.com/game";
+    //private string uri = "https://laberinto-encantado-backend-k2qp.onrender.com/game";
 
     void Awake(){
         if (instance == null)
@@ -38,7 +38,7 @@ public class NetworkManager : MonoBehaviour
     }
     void Start(){
         socket = new SocketIOUnity(uri, new SocketIOOptions{
-            Query = new Dictionary<string, string>{{"token", "UNITY" }},
+            //Query = new Dictionary<string, string>{{"token", "UNITY" }},
             Transport = SocketIOClient.Transport.TransportProtocol.WebSocket
         });
         socket.OnConnected += (sender, e) => {
@@ -54,6 +54,7 @@ public class NetworkManager : MonoBehaviour
 
         socket.Connect();
         socket.On("init", (response) => {OnInit();});
+        socket.On("resetGame", (response) => {OnResetGame(response);});
         socket.On("message", (response) => {OnMessage(response);});
         socket.On("numberParticipants", (response) => {OnNumberParticipants(response);});
         socket.On("isStarted", (response) => {OnIsStarted(response);});
@@ -87,6 +88,37 @@ public class NetworkManager : MonoBehaviour
             ControlJuego.instance.initGame(false);
         });
     }
+    void OnResetGame (SocketIOResponse response){
+        GameDTO gameInstance = CreateFromJSON<GameDTO>(response);
+        UnityThread.executeInUpdate(() =>{
+            //Reset players
+            foreach (TeamDTO team in gameInstance.teams){
+                foreach (PlayerDTO player in team.players){
+                    Transform o = jugadores.Find(player.id) as Transform;
+                    GameObject playerGO;
+                    //resetear
+                    if (o != null){
+                        playerGO = o.gameObject;
+                        playerGO.GetComponent<PlayerController>().resetPlayerGameObject();
+                    }
+                    //Nuevo objeto
+                    else{
+                        playerGO = Instantiate(jugadorPrefab, jugadores);
+                        playerGO.GetComponent<PlayerController>().isLocalPlayer = (localPlayer.id == player.id);
+                        playerGO.GetComponent<PlayerController>().initPlayerGameObject (player, this.joystick, this.weaponButton);
+                    }
+                    Transform c = laberinto.Find (player.spawnpoint) as Transform;
+                    if (c != null){
+                        playerGO.transform.localPosition = new Vector2 (c.position.x, c.position.y);
+                        player.updateCoords (c.position.x, c.position.y);
+                        socket.Emit("moves", JsonUtility.ToJson(player));
+                    }
+                }
+            }
+            ControlJuego.instance.resetGamePanels();
+            lifebar.sprite = lifebarSprites[0];
+        });
+    }
     void OnIsStarted(SocketIOResponse response){
         ControlJuego.instance.isStarted = response.GetValue<bool>();
     }
@@ -108,14 +140,9 @@ public class NetworkManager : MonoBehaviour
         }
     }
     void OnCreateMap (SocketIOResponse response){
-        //Debug.Log(response.ToString());
         MapDTO mapInstance = MapDTO.CreateFromJSON(response);
-        int sizeX = mapInstance.sizeX;
-        int sizeY = mapInstance.sizeY;
 
         UnityThread.executeInUpdate(() => {
-            foreach (Transform celda in laberinto)
-                Destroy(celda.gameObject);
             laberinto.gameObject.GetComponent<GeneradorLaberinto>().generateMaze(mapInstance);
         });
     }
@@ -351,6 +378,11 @@ public class NetworkManager : MonoBehaviour
         }
         public void substractHealth(){
             health--;
+        }
+        public void resetPlayerDTO (){
+            health = 5;
+            granade = 3;
+            updateLookingAt (2);
         }
         public override string ToString(){
             return $"Player {name} with ID: {id} that belongs to team {colorTeam} is in {coordinateX};{coordinateY}";

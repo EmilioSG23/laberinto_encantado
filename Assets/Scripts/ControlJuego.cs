@@ -19,7 +19,7 @@ public class ControlJuego : MonoBehaviour
     public GameObject countdownGO;
 
     public GameObject waitRoomGO;
-    public TMP_Text wailMessage;
+    public TMP_Text waitMessage;
     public TMP_Text initialMessage;
     public GameObject button;
     public TMP_Text buttonMessage;
@@ -30,8 +30,14 @@ public class ControlJuego : MonoBehaviour
 
     public GameObject panelDeath;
     public GameObject playerDeathSprite;
+    public GameObject resetButton;
     
     private int countdown = 3;
+    private bool isAdmin = false;
+
+    public bool getIsAdmin(){
+        return this.isAdmin;    
+    }
 
     void Awake(){
         if (instance == null)
@@ -42,13 +48,16 @@ public class ControlJuego : MonoBehaviour
 
     public void initGamePanel(){
         panels.SetActive (true);
+        panelEndgame.SetActive(false);
+        panelDeath.SetActive(false);
         waitRoomGO.SetActive (true);
         fondo.SetActive (true);
         initialMessage.gameObject.SetActive (true);
     }
 
     public void initAdminPanel(){
-        wailMessage.gameObject.SetActive (false);
+        this.isAdmin = true;
+        waitMessage.gameObject.SetActive (false);
         button.SetActive (true);
         buttonMessage.text = "Iniciar Juego";
         buttonMessage.color = Color.black;
@@ -104,7 +113,28 @@ public class ControlJuego : MonoBehaviour
         }
         else{
             winnerText.text = "Empate";
+            winnerText.color = Color.white;
+            foreach (GameObject playerSprite in team)
+                playerSprite.GetComponent<Image>().color = Color.white;
         }
+        if (isAdmin)
+            resetButton.SetActive (true);
+    }
+
+    public void resetGamePanels(){
+        panels.SetActive(true);
+        panelEndgame.SetActive(false);
+        panelDeath.SetActive(false);
+        waitRoomGO.SetActive(true);
+
+        initGamePanel();
+        if (isAdmin)
+            initAdminPanel();
+    }
+
+    public void resetGame(){
+        Debug.Log("resetear");
+        NetworkManager.socket.Emit ("resetGame");
     }
 
     public void showDeathPanel (int color){
@@ -126,6 +156,7 @@ public class ControlJuego : MonoBehaviour
     }
 
     private IEnumerator iniciarCountdown(){
+        countdown = 3;
         countdownGO.SetActive (true);
         while (countdown > 0){
             texto.text = countdown.ToString();
