@@ -137,6 +137,7 @@ public class NetworkManager : MonoBehaviour
     {
         if (localPlayer != null)
         {
+            Debug.Log($"Conectado a {uri}");
             string json = JsonUtility.ToJson(localPlayer);
             disconnectPlayer(json);
         }

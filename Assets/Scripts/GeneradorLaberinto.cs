@@ -8,7 +8,6 @@ public class GeneradorLaberinto : MonoBehaviour
     public Vector2Int tamano;
 
     public void generateMaze (NetworkManager.MapDTO mapInstance){
-        Debug.Log ("generando");
         foreach (Transform celda in transform){
             Destroy (celda.gameObject);
         }
@@ -18,7 +17,6 @@ public class GeneradorLaberinto : MonoBehaviour
             for (int y = 0; y < tamano.y; y++){
                 Vector2 posicionCelda = new Vector2 ((x -(tamano.x / 2f)) * celdaPrefab.transform.localScale.x, (y - (tamano.y / 2f)) * celdaPrefab.transform.localScale.y);
                 CeldaController celda = Instantiate(celdaPrefab, posicionCelda, Quaternion.identity, transform);
-                celda.name = $"[{x+1};{y+1}]";
                 if (!mapInstance.cells[x][y].right)
                     celda.GetComponent<CeldaController>().eliminarMuro(0);
                 if (!mapInstance.cells[x][y].left)
@@ -52,25 +50,21 @@ public class GeneradorLaberinto : MonoBehaviour
             if ((x == 1 || x == 2) && (y == 1 || y == 2)){
                 cell.prepareSpawnPoint(3);
                 yellowCells.Add(cell);
-                Debug.Log("Añadido a yellowCells: " + o.gameObject.name);
             }
             //Spawnpoint RED
             if ((x == 1 || x == 2) && (y == tamano.y || y == tamano.y - 1)){
                 cell.prepareSpawnPoint(0);
                 redCells.Add(cell);
-                Debug.Log("Añadido a redCells: " + o.gameObject.name);
             }
             //Spawnpoint BLUE
             if ((x == tamano.x || x == tamano.x - 1) && (y == tamano.y || y == tamano.y - 1)){
                 cell.prepareSpawnPoint(1);
                 blueCells.Add(cell);
-                Debug.Log("Añadido a blueCells: " + o.gameObject.name);
             }
             //Spawnpoint GREEN
             if ((x == tamano.x || x == tamano.x - 1) && (y == 1 || y == 2)){
                 cell.prepareSpawnPoint(2);
                 greenCells.Add(cell);
-                Debug.Log("Añadido a greenCells: " + o.gameObject.name);
             }
         }
         for (int i = 0; i < redCells.Count; i++){

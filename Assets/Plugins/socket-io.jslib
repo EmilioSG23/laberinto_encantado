@@ -98,6 +98,9 @@ mergeInto(LibraryManager.library, {
 				JSON.stringify(response)
 			);
 		});
+		socket.on('resetGame', function (response) {
+			myGameInstance.SendMessage('NetworkManager', 'OnResetGame', JSON.stringify(response));
+		});
 	},
 
 	hit: function (playerDTO) {
