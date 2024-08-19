@@ -129,6 +129,7 @@ public class NetworkManager : MonoBehaviour
     #if UNITY_WEBGL && !UNITY_EDITOR
     public void OnConnected(string data)
     {
+        Debug.Log($"Conectado a {uri}");
         string json = JsonUtility.ToJson(new PlayerDTO("", "", 0));
         joinGame(json);
     }
@@ -137,7 +138,6 @@ public class NetworkManager : MonoBehaviour
     {
         if (localPlayer != null)
         {
-            Debug.Log($"Conectado a {uri}");
             string json = JsonUtility.ToJson(localPlayer);
             disconnectPlayer(json);
         }
