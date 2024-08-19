@@ -5,7 +5,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using TMPro;
 
-public class WeaponButtonController: MonoBehaviour
+public class WeaponButtonController : MonoBehaviour
 {
     public Button mainWeaponButton;
     public Button secondaryWeaponButton;
@@ -33,12 +33,14 @@ public class WeaponButtonController: MonoBehaviour
         trigger.triggers.Add(pointerUpEntry);
     }
 
-    void Update(){
+    void Update()
+    {
         if (isMainWeaponUsing)
             UseWeapon();
     }
 
-    public bool IsPointerOverUI(){
+    public bool IsPointerOverUI()
+    {
         PointerEventData eventData = new PointerEventData(EventSystem.current);
         eventData.position = Input.mousePosition;
         List<RaycastResult> results = new List<RaycastResult>();
@@ -46,25 +48,32 @@ public class WeaponButtonController: MonoBehaviour
         return results.Count > 0;
     }
 
-    public void SetPlayer(GameObject g){
+    public void SetPlayer(GameObject g)
+    {
         this.player = g.GetComponent<PlayerController>();
     }
-    public void UseWeapon(){
+    public void UseWeapon()
+    {
         player.UseWeapon();
     }
-    public void ChangeWeapon(){
-        if (Time.time > player.getLastTimeChangeWeapon() + 0.5f){
+    public void ChangeWeapon()
+    {
+        if (Time.time > player.getLastTimeChangeWeapon() + 0.5f)
+        {
             player.ChangeWeapon();
             ChangeWeaponSprite();
         }
     }
-    public void ChangeWeaponSprite(){
-        if (player.getWeapon() == 0){
+    public void ChangeWeaponSprite()
+    {
+        if (player.getWeapon() == 0)
+        {
             mainWeaponButton.GetComponent<Image>().sprite = gunWeaponButton;
             secondaryWeaponButton.GetComponent<Image>().sprite = grenadeWeaponButton;
             amountText.text = "∞";
         }
-        else if (player.getWeapon() == 1){
+        else if (player.getWeapon() == 1)
+        {
             mainWeaponButton.GetComponent<Image>().sprite = grenadeWeaponButton;
             secondaryWeaponButton.GetComponent<Image>().sprite = gunWeaponButton;
             amountText.text = player.playerDTO.granade.ToString();
