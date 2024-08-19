@@ -73,7 +73,11 @@ public class NetworkManager : MonoBehaviour
         socket.OnDisconnected += (sender, e) =>
         {
             if (localPlayer != null)
+                #if UNITY_WEBGL && !UNITY_EDITOR
+                disconnectPlayer(JsonUtility.ToJson(localPlayer));
+                #else
                 socket.Emit("disconnectPlayer", JsonUtility.ToJson(localPlayer));
+                #endif
         };
 
         socket.Connect();
@@ -104,15 +108,25 @@ public class NetworkManager : MonoBehaviour
     public void OnApplicationQuit()
     {
         if (localPlayer != null)
-#if UNITY_WEBGL && !UNITY_EDITOR
+        #if UNITY_WEBGL && !UNITY_EDITOR
             disconnectPlayer(JsonUtility.ToJson(localPlayer));
-#else
+        #else
             socket.Emit("disconnectPlayer", JsonUtility.ToJson(localPlayer));
-#endif
+        #endif
+    }
+
+    void OnDestroy ()
+    {
+        if (localPlayer != null)
+        #if UNITY_WEBGL && !UNITY_EDITOR
+            disconnectPlayer(JsonUtility.ToJson(localPlayer));
+        #else
+            socket.Emit("disconnectPlayer", JsonUtility.ToJson(localPlayer));
+        #endif
     }
 
     //ON Events
-#if UNITY_WEBGL && !UNITY_EDITOR
+    #if UNITY_WEBGL && !UNITY_EDITOR
     public void OnConnected(string data)
     {
         string json = JsonUtility.ToJson(new PlayerDTO("", "", 0));
@@ -127,7 +141,7 @@ public class NetworkManager : MonoBehaviour
             disconnectPlayer(json);
         }
     }
-#endif
+    #endif
 
     void OnMessage(object response)
     {
@@ -170,11 +184,11 @@ public class NetworkManager : MonoBehaviour
                     {
                         playerGO.transform.localPosition = new Vector2(c.position.x, c.position.y);
                         player.updateCoords(c.position.x, c.position.y);
-#if UNITY_WEBGL && !UNITY_EDITOR
+                    #if UNITY_WEBGL && !UNITY_EDITOR
                         moves(JsonUtility.ToJson(player));
-#else
+                    #else
                         socket.Emit("moves", JsonUtility.ToJson(player));
-#endif
+                    #endif
 
                     }
                 }
@@ -391,11 +405,11 @@ public class NetworkManager : MonoBehaviour
             {
                 playerGO.transform.localPosition = new Vector2(c.position.x, c.position.y);
                 playerInstance.updateCoords(c.position.x, c.position.y);
-#if UNITY_WEBGL && !UNITY_EDITOR
+                #if UNITY_WEBGL && !UNITY_EDITOR
                 moves(JsonUtility.ToJson(playerInstance));
-#else
+                #else
                 socket.Emit("moves", JsonUtility.ToJson(playerInstance));
-#endif
+                #endif
             }
         });
     }
@@ -445,14 +459,14 @@ public class NetworkManager : MonoBehaviour
 
     private void runAction(Action action)
     {
-#if UNITY_WEBGL && !UNITY_EDITOR
+    #if UNITY_WEBGL && !UNITY_EDITOR
         action();
-#else
+    #else
         UnityThread.executeInUpdate(() =>
         {
             action();
         });
-#endif
+    #endif
     }
 
     #region JSON_DTO

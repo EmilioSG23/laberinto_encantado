@@ -165,7 +165,7 @@ public class ControlJuego : MonoBehaviour
     {
         Debug.Log("resetear");
 #if UNITY_WEBGL && !UNITY_EDITOR
-        resetGame();
+        resetGameIO();
 #else
         NetworkManager.socket.Emit("resetGame");
 #endif
