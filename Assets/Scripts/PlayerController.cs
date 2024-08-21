@@ -97,7 +97,6 @@ public class PlayerController : MonoBehaviour
             float snappedAngleRad = snappedAngle * Mathf.Deg2Rad;
             float x = Mathf.Cos(snappedAngleRad);
             float y = Mathf.Sin(snappedAngleRad);
-
             Horizontal = x; Vertical = y;
         }
         else
@@ -123,16 +122,13 @@ public class PlayerController : MonoBehaviour
         }
 
         if ((Input.GetKey(KeyCode.Space) || (Input.GetMouseButton(0) &&
-        (joystick.GetComponent<Joystick>().Horizontal == 0 && joystick.GetComponent<Joystick>().Vertical == 0)))
-         && !weaponButton.IsPointerOverUI())
-        {
+        (joystick.GetComponent<Joystick>().Vertical == 0)))
+         && !weaponButton.IsPointerOverUI()){
             UseWeapon();
         }
 
-        if ((Input.GetMouseButton(1) || Input.GetKey(KeyCode.C)))
-        {
+        if ((Input.touchCount < 1) && (Input.GetMouseButton(1) || Input.GetKey(KeyCode.C))){
             ChangeWeapon();
-            lastTimeChangeWeapon = Time.time;
         }
     }
 
@@ -179,6 +175,7 @@ public class PlayerController : MonoBehaviour
                 cooldown = cooldownTiro;
             }
             weaponButton.ChangeWeaponSprite();
+            lastTimeChangeWeapon = Time.time;
         }
     }
 
