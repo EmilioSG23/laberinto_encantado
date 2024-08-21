@@ -39,6 +39,8 @@ public class PlayerController : MonoBehaviour
     public bool isLocalPlayer = false;
     public GameObject localIndicator;
     public Image localIndicatorImage;
+    public SpriteRenderer gunSprite;
+    public SpriteRenderer grenadeSprite;
 
 #if UNITY_WEBGL && !UNITY_EDITOR
     [DllImport("__Internal")]
@@ -168,11 +170,15 @@ public class PlayerController : MonoBehaviour
             {
                 weapon = 1;
                 cooldown = cooldownGranade;
+                //gunSprite.gameObject.SetActive(false);
+                //grenadeSprite.gameObject.SetActive(true);
             }
             else if (weapon == 1)
             {
                 weapon = 0;
                 cooldown = cooldownTiro;
+                //gunSprite.gameObject.SetActive(true);
+                //grenadeSprite.gameObject.SetActive(false);
             }
             weaponButton.ChangeWeaponSprite();
             lastTimeChangeWeapon = Time.time;
@@ -199,6 +205,7 @@ public class PlayerController : MonoBehaviour
 
     public void resetPlayerGameObject()
     {
+        parado = true;
         playerDTO.resetPlayerDTO();
         if (weaponButton != null)
             weaponButton.ChangeWeaponSprite();
@@ -321,7 +328,6 @@ public class PlayerController : MonoBehaviour
             playerDTO.updateLookingAt(3);
         }
         textTeamID.transform.rotation = Quaternion.Euler(0, 0, 0);
-        //Debug.Log($"Player {playerDTO.id} is looking at: {playerDTO.lookingAt}");
     }
 
     private void FixedUpdate()
@@ -334,7 +340,6 @@ public class PlayerController : MonoBehaviour
         {
             position = newPosition;
             playerDTO.updateCoords(position);
-            //Debug.Log($"X: {playerDTO.coordinateX} Y: {playerDTO.coordinateY}");
 #if UNITY_WEBGL && !UNITY_EDITOR
             moves(JsonUtility.ToJson(playerDTO));
 #else

@@ -5,6 +5,7 @@ using UnityEngine;
 public class GeneradorLaberinto : MonoBehaviour
 {
     public CeldaController celdaPrefab;
+    public GameObject goalPrefab;
     public Vector2Int tamano;
 
     public void generateMaze (NetworkManager.MapDTO mapInstance){
@@ -74,7 +75,6 @@ public class GeneradorLaberinto : MonoBehaviour
             blueCells[i].destroySpawnPointWall(i%4);
             yellowCells[i].destroySpawnPointWall(i%4);
         }
-        Debug.Log (redCells.Count);
     }
 
     private void setExitDoors(){
@@ -87,18 +87,30 @@ public class GeneradorLaberinto : MonoBehaviour
             //Exit Door BLUE
             if (x == 1 && (y == 1 || y == 2)){
                 cell.setExitDoor(1, false);
+                if (y == 1 && !ControlJuego.instance.existsGoalIndicator(1))
+                    ControlJuego.instance.setGoalIndicator(1, Instantiate (goalPrefab, 
+                    new Vector2 (cell.transform.position.x + celdaPrefab.transform.localScale.x*-1.5f, cell.transform.position.y + (celdaPrefab.transform.localScale.y/2)), Quaternion.identity));
             }
             //Exit Door GREEN
             if (x == 1 && (y == tamano.y || y == tamano.y - 1)){
                 cell.setExitDoor(2, false);
+                if (y == tamano.y && !ControlJuego.instance.existsGoalIndicator(2))
+                    ControlJuego.instance.setGoalIndicator(2, Instantiate (goalPrefab, 
+                    new Vector2 (cell.transform.position.x + celdaPrefab.transform.localScale.x*-1.5f, cell.transform.position.y - (celdaPrefab.transform.localScale.y/2)), Quaternion.identity));
             }
             //Exit Door YELLOW
             if (x == tamano.x && (y == tamano.y || y == tamano.y - 1)){
                 cell.setExitDoor(3, true);
+                if (y == tamano.y && !ControlJuego.instance.existsGoalIndicator(3))
+                    ControlJuego.instance.setGoalIndicator(3, Instantiate (goalPrefab, 
+                    new Vector2 (cell.transform.position.x + celdaPrefab.transform.localScale.x*1.5f, cell.transform.position.y - (celdaPrefab.transform.localScale.y/2)), Quaternion.identity));
             }
             //Exit Door RED
             if (x == tamano.x && (y == 1 || y == 2)){
                 cell.setExitDoor(0, true);
+                if (y == 1 && !ControlJuego.instance.existsGoalIndicator(0))
+                    ControlJuego.instance.setGoalIndicator(0, Instantiate (goalPrefab, 
+                    new Vector2 (cell.transform.position.x + celdaPrefab.transform.localScale.x*1.5f, cell.transform.position.y + (celdaPrefab.transform.localScale.y/2)), Quaternion.identity));
             }
         }
     }

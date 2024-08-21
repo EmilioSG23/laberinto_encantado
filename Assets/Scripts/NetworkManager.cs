@@ -17,7 +17,7 @@ public class NetworkManager : MonoBehaviour
     public Transform laberinto;
     public GameObject playerUI;
     public TMP_Text teamPlayerID;
-    public TMP_Text username;
+    //public TMP_Text username;
     public Image lifebar;
     public Sprite[] lifebarSprites = new Sprite[6];
     public FixedJoystick joystick;
@@ -26,6 +26,7 @@ public class NetworkManager : MonoBehaviour
     public GameObject jugadorPrefab;
     public GameObject BalaPrefab;
     public TMP_Text timer;
+    public Image timerImage;
 
     private PlayerDTO localPlayer;
     //private string uri = "http://localhost:8000/game";
@@ -65,6 +66,7 @@ public class NetworkManager : MonoBehaviour
         });
         socket.OnConnected += (sender, e) =>
         {
+            Debug.Log ("Unity Editor/Unity Application");
             Debug.Log($"Conectado a {uri}");
             socket.Emit("joinGame", JsonUtility.ToJson(new PlayerDTO("", 0)));
             //socket.Emit("createMap", JsonUtility.ToJson(new MapDTO (15, 15, 1, 1)));
@@ -105,7 +107,7 @@ public class NetworkManager : MonoBehaviour
 
 
 
-    public void OnApplicationQuit()
+    /*public void OnApplicationQuit()
     {
         if (localPlayer != null)
         #if UNITY_WEBGL && !UNITY_EDITOR
@@ -113,7 +115,7 @@ public class NetworkManager : MonoBehaviour
         #else
             socket.Emit("disconnectPlayer", JsonUtility.ToJson(localPlayer));
         #endif
-    }
+    }*/
 
     void OnDestroy ()
     {
@@ -129,6 +131,7 @@ public class NetworkManager : MonoBehaviour
     #if UNITY_WEBGL && !UNITY_EDITOR
     public void OnConnected(string data)
     {
+        Debug.Log ("Unity WebGL");
         Debug.Log($"Conectado a {uri}");
         string json = JsonUtility.ToJson(new PlayerDTO("", "", 0));
         joinGame(json);
@@ -158,40 +161,12 @@ public class NetworkManager : MonoBehaviour
     void OnResetGame(object response)
     {
         GameDTO gameInstance = CreateFromJSON<GameDTO>(response);
-        runAction(() =>
-        {
-            //Reset players
-            foreach (TeamDTO team in gameInstance.teams)
-            {
-                foreach (PlayerDTO player in team.players)
-                {
-                    Transform o = jugadores.Find(player.id) as Transform;
-                    GameObject playerGO;
-                    //resetear
-                    if (o != null)
-                    {
-                        playerGO = o.gameObject;
-                        playerGO.GetComponent<PlayerController>().resetPlayerGameObject();
-                    }
-                    //Nuevo objeto
-                    else
-                    {
-                        playerGO = Instantiate(jugadorPrefab, jugadores);
-                        playerGO.GetComponent<PlayerController>().isLocalPlayer = (localPlayer.id == player.id);
-                        playerGO.GetComponent<PlayerController>().initPlayerGameObject(player, this.joystick, this.weaponButton);
-                    }
-                    Transform c = laberinto.Find(player.spawnpoint) as Transform;
-                    if (c != null)
-                    {
-                        playerGO.transform.localPosition = new Vector2(c.position.x, c.position.y);
-                        player.updateCoords(c.position.x, c.position.y);
-                    #if UNITY_WEBGL && !UNITY_EDITOR
-                        moves(JsonUtility.ToJson(player));
-                    #else
-                        socket.Emit("moves", JsonUtility.ToJson(player));
-                    #endif
-
-                    }
+        runAction(() =>{
+            foreach (Transform player in jugadores)
+                Destroy(player.gameObject);
+            foreach (TeamDTO team in gameInstance.teams){
+                foreach (PlayerDTO player in team.players){
+                    CreatePlayerGameObject(player, player.id == localPlayer.id, true);
                 }
             }
             ControlJuego.instance.resetGamePanels();
@@ -237,8 +212,7 @@ public class NetworkManager : MonoBehaviour
         GameDTO gameInstance = CreateFromJSON<GameDTO>(response);
         foreach (TeamDTO team in gameInstance.teams)
         {
-            foreach (PlayerDTO player in team.players)
-            {
+            foreach (PlayerDTO player in team.players){
                 CreatePlayerGameObject(player, false, false);
             }
         }
@@ -265,16 +239,30 @@ public class NetworkManager : MonoBehaviour
         int timeLeft = 0;
         if (response is string jsonString)
         {
-            timeLeft = int.Parse(jsonString);
+            timeLeft = int.Parse(jsonString)/ 1000;
         }
         else if (response is SocketIOResponse socketIOResponse)
         {
-            timeLeft = socketIOResponse.GetValue<int>();
+            timeLeft = socketIOResponse.GetValue<int>()/ 1000;
         }
 
         runAction(() =>
         {
-            timer.text = (timeLeft / 1000).ToString();
+            timer.text = timeLeft.ToString();
+            if (timeLeft <= 15){
+                timer.color = Color.red;
+                timerImage.color = Color.red;
+            }else if (timeLeft <= 30){
+                timer.color = new Color(1.0f, 0.65f, 0.0f);
+                timerImage.color = new Color(1.0f, 0.65f, 0.0f);
+            }else if (timeLeft <= 45){
+                timer.color = Color.yellow;
+                timerImage.color = Color.yellow;
+            }else{
+                timer.color = Color.white;
+                timerImage.color = Color.white;
+            }
+                
         });
     }
     void OnEndGame(object response)
@@ -315,8 +303,10 @@ public class NetworkManager : MonoBehaviour
     void OnDisconnectPlayer(object response)
     {
         PlayerDTO playerInstance = CreateFromJSON<PlayerDTO>(response);
-        GameObject playerGO = findPlayer(playerInstance);
-        Destroy(playerGO);
+        runAction(()=>{
+            GameObject playerGO = findPlayer(playerInstance);
+            Destroy(playerGO);
+        });
     }
 
     void OnMovePlayer(object response)
@@ -355,7 +345,7 @@ public class NetworkManager : MonoBehaviour
         runAction(() =>
         {
             GameObject playerGO = findPlayer(playerInstance);
-            if (playerGO.GetComponent<PlayerController>().isLocalPlayer) return;
+            if (playerGO == null || playerGO.GetComponent<PlayerController>().isLocalPlayer) return;
             playerGO.GetComponent<PlayerController>().Disparar();
         });
     }
@@ -365,6 +355,7 @@ public class NetworkManager : MonoBehaviour
         runAction(() =>
         {
             GameObject playerGO = findPlayer(playerInstance);
+            if (playerGO == null) return;
             //if (playerGO.GetComponent<PlayerController>().isLocalPlayer)    return;
             playerGO.GetComponent<PlayerController>().playerDTO.substractHealth();
             if (playerInstance.id == localPlayer.id)
@@ -383,6 +374,7 @@ public class NetworkManager : MonoBehaviour
         runAction(() =>
         {
             GameObject playerGO = findPlayer(playerInstance);
+            if (playerGO == null) return;
             if (playerGO.GetComponent<PlayerController>().isLocalPlayer) return;
             playerGO.GetComponent<PlayerController>().ThrowGrenade();
             playerGO.GetComponent<PlayerController>().playerDTO.substractGranade();
@@ -402,8 +394,7 @@ public class NetworkManager : MonoBehaviour
             playerGO.GetComponent<PlayerController>().initPlayerGameObject(playerInstance, this.joystick, this.weaponButton);
 
             Transform c = laberinto.Find(playerInstance.spawnpoint) as Transform;
-            if (c != null && inSpawnpoint)
-            {
+            if (c != null && inSpawnpoint && localPlayer || (Mathf.Abs(playerInstance.coordinateX) < 5 && Mathf.Abs(playerInstance.coordinateY) < 5) && !ControlJuego.instance.isStarted){
                 playerGO.transform.localPosition = new Vector2(c.position.x, c.position.y);
                 playerInstance.updateCoords(c.position.x, c.position.y);
                 #if UNITY_WEBGL && !UNITY_EDITOR
@@ -417,10 +408,9 @@ public class NetworkManager : MonoBehaviour
 
     private void initPlayerIndicator(string name, int numberInTeam, int colorTeam)
     {
-        runAction(() =>
-        {
+        runAction(() =>{
             teamPlayerID.text = numberInTeam.ToString();
-            username.text = name;
+            //username.text = name;
             //RED
             if (colorTeam == 0)
             {
@@ -447,6 +437,7 @@ public class NetworkManager : MonoBehaviour
             }
             if (!ControlJuego.instance.isStarted)
                 ControlJuego.instance.initGamePanel();
+            ControlJuego.instance.setTeamGoalIndicator(colorTeam);
         });
     }
 

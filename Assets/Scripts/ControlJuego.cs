@@ -11,11 +11,11 @@ public class ControlJuego : MonoBehaviour
     [HideInInspector]
     public bool isStarted = false;
     public Transform jugadores;
-    public GameObject jugadorPrefab;
 
     public GameObject panels;
     public GameObject fondo;
     public TMP_Text texto;
+    public GameObject panelNoConnection;
 
     public GameObject countdownGO;
 
@@ -32,6 +32,8 @@ public class ControlJuego : MonoBehaviour
     public GameObject panelDeath;
     public GameObject playerDeathSprite;
     public GameObject resetButton;
+    private GameObject[] goalIndicators = new GameObject[4];
+    private int teamGoalIndicator = -1;
 
     private int countdown = 3;
     private bool isAdmin = false;
@@ -48,6 +50,26 @@ public class ControlJuego : MonoBehaviour
     {
         return this.isAdmin;
     }
+    
+    public void setGoalIndicator(int colorTeam, GameObject goalIndicator){
+        this.goalIndicators[colorTeam] = goalIndicator;
+        this.goalIndicators[colorTeam].SetActive(false);
+    }
+    public void setTeamGoalIndicator (int colorTeam){
+        if (colorTeam > 3 || colorTeam < 0)
+            this.teamGoalIndicator = -1;
+        this.teamGoalIndicator = colorTeam;
+    }
+    public bool existsGoalIndicator(int colorTeam){
+        return this.goalIndicators[colorTeam] != null;
+    }
+    public void initGoalIndicator (){
+        this.goalIndicators[this.teamGoalIndicator].SetActive(true);
+    }
+    public void disableGoalIndicator (){
+        foreach (GameObject g in this.goalIndicators)
+            g.SetActive(false);
+    }
 
     void Awake()
     {
@@ -56,9 +78,13 @@ public class ControlJuego : MonoBehaviour
         else if (instance != null)
             Destroy(gameObject);
     }
+    public void disablePanelNoConnection(){
+        panelNoConnection.SetActive(false);
+    }
 
     public void initGamePanel()
     {
+        disablePanelNoConnection();
         panels.SetActive(true);
         panelEndgame.SetActive(false);
         panelDeath.SetActive(false);
@@ -99,6 +125,7 @@ public class ControlJuego : MonoBehaviour
 
     public void endGame(int colorWinner)
     {
+        disableGoalIndicator();
         panels.SetActive(true);
         panelDeath.SetActive(false);
         panelEndgame.SetActive(true);
@@ -163,7 +190,6 @@ public class ControlJuego : MonoBehaviour
 
     public void resetGame()
     {
-        Debug.Log("resetear");
 #if UNITY_WEBGL && !UNITY_EDITOR
         resetGameIO();
 #else
@@ -208,5 +234,7 @@ public class ControlJuego : MonoBehaviour
 
         foreach (Transform jugador in jugadores.transform)
             jugador.transform.GetComponent<PlayerController>().parado = false;
+        
+        initGoalIndicator();
     }
 }
