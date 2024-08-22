@@ -50,30 +50,23 @@ public class NetworkManager : MonoBehaviour
             Destroy(gameObject);
         DontDestroyOnLoad(gameObject);
     }
-    void Start()
-    {
-
-
-#if UNITY_WEBGL && !UNITY_EDITOR
+    void Start(){
+        #if UNITY_WEBGL && !UNITY_EDITOR
         configSocket(uri);
 
-#else
-
-        socket = new SocketIOUnity(uri, new SocketIOOptions
-        {
+        #else
+        socket = new SocketIOUnity(uri, new SocketIOOptions{
             //Query = new Dictionary<string, string>{{"token", "UNITY" }},
             Transport = SocketIOClient.Transport.TransportProtocol.WebSocket
         });
-        socket.OnConnected += (sender, e) =>
-        {
+        socket.OnConnected += (sender, e) =>{
             Debug.Log ("Unity Editor/Unity Application");
             Debug.Log($"Conectado a {uri}");
             socket.Emit("joinGame", JsonUtility.ToJson(new PlayerDTO("", 0)));
             //socket.Emit("createMap", JsonUtility.ToJson(new MapDTO (15, 15, 1, 1)));
         };
 
-        socket.OnDisconnected += (sender, e) =>
-        {
+        socket.OnDisconnected += (sender, e) =>{
             if (localPlayer != null)
                 #if UNITY_WEBGL && !UNITY_EDITOR
                 disconnectPlayer(JsonUtility.ToJson(localPlayer));
@@ -102,7 +95,7 @@ public class NetworkManager : MonoBehaviour
         socket.On("shoot", (response) => { OnShoot(response); });
         socket.On("hit", (response) => { OnHit(response); });
         socket.On("throwGrenade", (response) => { OnThrowGrenade(response); });
-#endif
+        #endif
     }
 
 
@@ -129,16 +122,14 @@ public class NetworkManager : MonoBehaviour
 
     //ON Events
     #if UNITY_WEBGL && !UNITY_EDITOR
-    public void OnConnected(string data)
-    {
+    public void OnConnected(string data){
         Debug.Log ("Unity WebGL");
         Debug.Log($"Conectado a {uri}");
         string json = JsonUtility.ToJson(new PlayerDTO("", "", 0));
         joinGame(json);
     }
 
-    public void OnDisconnected(string data)
-    {
+    public void OnDisconnected(string data){
         if (localPlayer != null)
         {
             string json = JsonUtility.ToJson(localPlayer);
@@ -147,34 +138,82 @@ public class NetworkManager : MonoBehaviour
     }
     #endif
 
-    void OnMessage(object response)
-    {
+    void OnMessage(object response){
         Debug.Log(response);
     }
-    void OnInit()
-    {
+    void OnInit(){
         runAction(() =>
         {
             ControlJuego.instance.initGame(false);
         });
     }
-    void OnResetGame(object response)
-    {
+    void OnResetGame(object response){
         GameDTO gameInstance = CreateFromJSON<GameDTO>(response);
         runAction(() =>{
-            foreach (Transform player in jugadores)
+            /*foreach (Transform player in jugadores){
                 Destroy(player.gameObject);
+            }
             foreach (TeamDTO team in gameInstance.teams){
                 foreach (PlayerDTO player in team.players){
                     CreatePlayerGameObject(player, player.id == localPlayer.id, true);
                 }
+            }*/
+            foreach (TeamDTO team in gameInstance.teams){
+                foreach (PlayerDTO player in team.players){
+                    Transform o = jugadores.Find(player.id) as Transform;
+                    GameObject playerGO;
+                    //resetear
+                    if (o != null){
+                        playerGO = o.gameObject;
+                        playerGO.GetComponent<PlayerController>().resetPlayerGameObject();
+                    }
+                    //Nuevo objeto
+                    else{
+                        playerGO = Instantiate(jugadorPrefab, jugadores);
+                        playerGO.GetComponent<PlayerController>().isLocalPlayer = (localPlayer.id == player.id);
+                        playerGO.GetComponent<PlayerController>().initPlayerGameObject(player, this.joystick, this.weaponButton);
+                    }
+                    Transform c = laberinto.Find(player.spawnpoint) as Transform;
+                    if (c != null && (localPlayer.id == player.id)){
+                        playerGO.transform.localPosition = new Vector2(c.position.x, c.position.y);
+                        player.updateCoords(c.position.x, c.position.y);
+                        #if UNITY_WEBGL && !UNITY_EDITOR
+                        moves(JsonUtility.ToJson(player));
+                        #else
+                        socket.Emit("moves", JsonUtility.ToJson(player));
+                        #endif
+                    }
+                }
             }
+
+            VerifyPlayersConnected(gameInstance);
+
             ControlJuego.instance.resetGamePanels();
             lifebar.sprite = lifebarSprites[0];
         });
     }
-    void OnIsStarted(object response)
-    {
+    private void VerifyPlayersConnected(GameDTO gameInstance){
+        List<Transform> deletePlayers = new List<Transform>();
+        foreach (Transform playerTransform in jugadores){
+            bool existsPlayer = false;
+            foreach (TeamDTO team in gameInstance.teams){
+                foreach (PlayerDTO player in team.players){
+                    if (playerTransform.name == player.id){
+                        existsPlayer = true;
+                        break;
+                    }
+                }
+                if (existsPlayer)
+                    break;
+            }
+            if (!existsPlayer)
+                deletePlayers.Add(playerTransform);
+        }
+
+        foreach (Transform playerTransform in deletePlayers)
+            Destroy(playerTransform.gameObject);
+    }
+    void OnIsStarted(object response){
         bool isStarted = false;
         if (response is string jsonString)
         {
@@ -187,8 +226,7 @@ public class NetworkManager : MonoBehaviour
 
         ControlJuego.instance.isStarted = isStarted;
     }
-    void OnNumberParticipants(object response)
-    {
+    void OnNumberParticipants(object response){
         int numberParticipants = 0;
         if (response is string jsonString)
         {
@@ -203,12 +241,10 @@ public class NetworkManager : MonoBehaviour
             ControlJuego.instance.receiveNumberParticipants(numberParticipants);
         });
     }
-    void OnAdmin()
-    {
+    void OnAdmin(){
         runAction(() => { ControlJuego.instance.initAdminPanel(); });
     }
-    void OnGetAllPlayers(object response)
-    {
+    void OnGetAllPlayers(object response){
         GameDTO gameInstance = CreateFromJSON<GameDTO>(response);
         foreach (TeamDTO team in gameInstance.teams)
         {
@@ -217,8 +253,7 @@ public class NetworkManager : MonoBehaviour
             }
         }
     }
-    void OnCreateMap(object response)
-    {
+    void OnCreateMap(object response){
         MapDTO mapInstance = null;
         if (response is string jsonString)
         {
@@ -234,8 +269,7 @@ public class NetworkManager : MonoBehaviour
             laberinto.gameObject.GetComponent<GeneradorLaberinto>().generateMaze(mapInstance);
         });
     }
-    void OnTimeLeft(object response)
-    {
+    void OnTimeLeft(object response){
         int timeLeft = 0;
         if (response is string jsonString)
         {
@@ -265,8 +299,7 @@ public class NetworkManager : MonoBehaviour
                 
         });
     }
-    void OnEndGame(object response)
-    {
+    void OnEndGame(object response){
         runAction(() =>
         {
             int winnerTeam = 0;
@@ -286,22 +319,19 @@ public class NetworkManager : MonoBehaviour
             }
         });
     }
-    void OnJoinGame(object response)
-    {
+    void OnJoinGame(object response){
         PlayerDTO playerInstance = CreateFromJSON<PlayerDTO>(response);
         CreatePlayerGameObject(playerInstance, true, true);
         localPlayer = playerInstance;
         initPlayerIndicator(playerInstance.name, playerInstance.numberInTeam, playerInstance.colorTeam);
     }
 
-    void OnAddPlayer(object response)
-    {
+    void OnAddPlayer(object response){
         PlayerDTO playerInstance = CreateFromJSON<PlayerDTO>(response);
         CreatePlayerGameObject(playerInstance, false, true);
     }
 
-    void OnDisconnectPlayer(object response)
-    {
+    void OnDisconnectPlayer(object response){
         PlayerDTO playerInstance = CreateFromJSON<PlayerDTO>(response);
         runAction(()=>{
             GameObject playerGO = findPlayer(playerInstance);
@@ -309,19 +339,16 @@ public class NetworkManager : MonoBehaviour
         });
     }
 
-    void OnMovePlayer(object response)
-    {
+    void OnMovePlayer(object response){
         PlayerDTO playerInstance = CreateFromJSON<PlayerDTO>(response);
-        runAction(() =>
-        {
+        runAction(() =>{
             GameObject playerGO = findPlayer(playerInstance);
             if (playerGO == null || playerGO.GetComponent<PlayerController>().isLocalPlayer) return;
             playerGO.transform.localPosition = new Vector2(playerInstance.coordinateX, playerInstance.coordinateY);
             playerGO.GetComponent<PlayerController>().playerDTO.updateCoords(playerInstance.coordinateX, playerInstance.coordinateY);
         });
     }
-    void OnRotatePlayer(object response)
-    {
+    void OnRotatePlayer(object response){
         PlayerDTO playerInstance = CreateFromJSON<PlayerDTO>(response);
         runAction(() =>
         {
@@ -339,8 +366,7 @@ public class NetworkManager : MonoBehaviour
         });
     }
 
-    void OnShoot(object response)
-    {
+    void OnShoot(object response){
         PlayerDTO playerInstance = CreateFromJSON<PlayerDTO>(response);
         runAction(() =>
         {
@@ -349,8 +375,7 @@ public class NetworkManager : MonoBehaviour
             playerGO.GetComponent<PlayerController>().Disparar();
         });
     }
-    void OnHit(object response)
-    {
+    void OnHit(object response){
         PlayerDTO playerInstance = CreateFromJSON<PlayerDTO>(response);
         runAction(() =>
         {
@@ -368,8 +393,7 @@ public class NetworkManager : MonoBehaviour
             }
         });
     }
-    void OnThrowGrenade(object response)
-    {
+    void OnThrowGrenade(object response){
         PlayerDTO playerInstance = CreateFromJSON<PlayerDTO>(response);
         runAction(() =>
         {
@@ -381,8 +405,7 @@ public class NetworkManager : MonoBehaviour
         });
     }
 
-    private void CreatePlayerGameObject(PlayerDTO playerInstance, bool localPlayer, bool inSpawnpoint)
-    {
+    private void CreatePlayerGameObject(PlayerDTO playerInstance, bool localPlayer, bool inSpawnpoint){
         if (playerInstance.health <= 0)
             return;
         runAction(() =>
@@ -406,8 +429,7 @@ public class NetworkManager : MonoBehaviour
         });
     }
 
-    private void initPlayerIndicator(string name, int numberInTeam, int colorTeam)
-    {
+    private void initPlayerIndicator(string name, int numberInTeam, int colorTeam){
         runAction(() =>{
             teamPlayerID.text = numberInTeam.ToString();
             //username.text = name;
@@ -442,15 +464,13 @@ public class NetworkManager : MonoBehaviour
     }
 
 
-    private GameObject findPlayer(PlayerDTO playerInstance)
-    {
+    private GameObject findPlayer(PlayerDTO playerInstance){
         Transform o = jugadores.Find(playerInstance.id) as Transform;
         if (o == null) return null;
         return o.gameObject;
     }
 
-    private void runAction(Action action)
-    {
+    private void runAction(Action action){
     #if UNITY_WEBGL && !UNITY_EDITOR
         action();
     #else
@@ -462,20 +482,16 @@ public class NetworkManager : MonoBehaviour
     }
 
     #region JSON_DTO
-    public static T CreateFromJSON<T>(object data)
-    {
+    public static T CreateFromJSON<T>(object data){
         T instance = default(T);
 
-        if (data is string jsonData)
-        {
+        if (data is string jsonData){
             instance = JsonUtility.FromJson<T>(jsonData);
         }
-        else if (data is SocketIOResponse socketIOResponse)
-        {
+        else if (data is SocketIOResponse socketIOResponse){
             instance = JsonUtility.FromJson<T>(socketIOResponse.ToString().Substring(1, socketIOResponse.ToString().Length - 2));
         }
-        else
-        {
+        else{
             throw new System.ArgumentException("El tipo de dato no es compatible");
         }
 
@@ -483,19 +499,16 @@ public class NetworkManager : MonoBehaviour
     }
 
     [System.Serializable]
-    public class GameDTO
-    {
+    public class GameDTO{
         public List<TeamDTO> teams;
         public bool isEnded;
 
-        public GameDTO(List<TeamDTO> _teams, bool _isEnded)
-        {
+        public GameDTO(List<TeamDTO> _teams, bool _isEnded){
             teams = _teams;
             isEnded = _isEnded;
         }
 
-        public override string ToString()
-        {
+        public override string ToString(){
             string message = $"Laberinto Encantado with teams: \n";
             foreach (TeamDTO team in teams)
                 message += (team + "\n");
@@ -503,8 +516,7 @@ public class NetworkManager : MonoBehaviour
         }
     }
     [System.Serializable]
-    public class TeamDTO
-    {
+    public class TeamDTO{
         public int color;
         public List<PlayerDTO> players;
 
@@ -514,8 +526,7 @@ public class NetworkManager : MonoBehaviour
             players = _players;
         }
 
-        public override string ToString()
-        {
+        public override string ToString(){
             string message = $"Team {color} with members: ";
             foreach (PlayerDTO player in players)
                 message += $"{player.name}, ";
@@ -523,8 +534,7 @@ public class NetworkManager : MonoBehaviour
         }
     }
     [System.Serializable]
-    public class PlayerDTO
-    {
+    public class PlayerDTO{
         public string id;
         public string name;
         public int numberInTeam;
@@ -536,8 +546,7 @@ public class NetworkManager : MonoBehaviour
         public int health;
         public string spawnpoint;
 
-        public PlayerDTO(string _id, string _name, int _numberInTeam, float _coordinateX, float _coordinateY, int _lookingAt, int _colorTeam, int _granade, int _health, string _spawnpoint)
-        {
+        public PlayerDTO(string _id, string _name, int _numberInTeam, float _coordinateX, float _coordinateY, int _lookingAt, int _colorTeam, int _granade, int _health, string _spawnpoint){
             id = _id;
             name = _name;
             numberInTeam = _numberInTeam;
@@ -552,72 +561,59 @@ public class NetworkManager : MonoBehaviour
         public PlayerDTO(string _id, string _name, int _colorTeam) : this(_id, _name, 0, 0.0f, 0.0f, 2, _colorTeam, 3, 5, "") { }
         public PlayerDTO(string _name, int _colorTeam) : this("", _name, _colorTeam) { }
 
-        public void updateCoords(Vector2 position)
-        {
+        public void updateCoords(Vector2 position){
             coordinateX = position.x;
             coordinateY = position.y;
         }
-        public void updateCoords(float x, float y)
-        {
+        public void updateCoords(float x, float y){
             coordinateX = x;
             coordinateY = y;
         }
-        public void updateLookingAt(int direction)
-        {
+        public void updateLookingAt(int direction){
             lookingAt = direction;
         }
-        public void substractGranade()
-        {
+        public void substractGranade(){
             granade--;
         }
-        public void substractHealth()
-        {
+        public void substractHealth(){
             health--;
         }
-        public void resetPlayerDTO()
-        {
+        public void resetPlayerDTO(){
             health = 5;
             granade = 3;
             updateLookingAt(2);
         }
-        public override string ToString()
-        {
+        public override string ToString(){
             return $"Player {name} with ID: {id} that belongs to team {colorTeam} is in {coordinateX};{coordinateY}";
         }
     }
     [System.Serializable]
-    public class MapDTO
-    {
+    public class MapDTO{
         public int sizeX { get; set; }
         public int sizeY { get; set; }
         public CellDTO[][] cells { get; set; }
 
-        public MapDTO(int _sizeX, int _sizeY, CellDTO[][] _cells)
-        {
+        public MapDTO(int _sizeX, int _sizeY, CellDTO[][] _cells){
             sizeX = _sizeX;
             sizeY = _sizeY;
             cells = _cells;
         }
 
-        public static MapDTO CreateFromJSON(string data)
-        {//data contains [] at the begin and end
+        public static MapDTO CreateFromJSON(string data){//data contains [] at the begin and end
             return Newtonsoft.Json.JsonConvert.DeserializeObject<MapDTO>(data);
         }
-        public static MapDTO CreateFromJSON(SocketIOResponse data)
-        {//data contains [] at the begin and end
+        public static MapDTO CreateFromJSON(SocketIOResponse data){//data contains [] at the begin and end
             return Newtonsoft.Json.JsonConvert.DeserializeObject<MapDTO>(data.ToString().Substring(1, data.ToString().Length - 2));
         }
     }
     [System.Serializable]
-    public class CellDTO
-    {
+    public class CellDTO{
         public bool right;
         public bool left;
         public bool up;
         public bool down;
 
-        public CellDTO(bool _right, bool _left, bool _up, bool _down)
-        {
+        public CellDTO(bool _right, bool _left, bool _up, bool _down){
             right = _right;
             left = _left;
             up = _up;
