@@ -3,7 +3,11 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Unity WebGL Player | laberintoEncantado</title>
+    <title>Laberinto Encantado</title>
+    <script
+			src="https://cdn.socket.io/4.7.5/socket.io.min.js"
+			integrity="sha384-2huaZvOR9iDzHqslqwpR87isEmrfxqyWOF7hr7BY6KG0+hVKLoEXMPUJw3ynWuhO"
+			crossorigin="anonymous"></script>
     <link rel="shortcut icon" href="TemplateData/favicon.ico">
     <link rel="stylesheet" href="TemplateData/style.css">
   </head>
@@ -20,7 +24,7 @@
       <div id="unity-footer">
         <div id="unity-webgl-logo"></div>
         <div id="unity-fullscreen-button"></div>
-        <div id="unity-build-title">laberintoEncantado</div>
+        <div id="unity-build-title">LaberintoEncantado</div>
       </div>
     </div>
     <script>
@@ -95,7 +99,7 @@
         // Desktop style: Render the game canvas in a window that can be maximized to fullscreen:
 
         canvas.style.width = "720px";
-        canvas.style.height = "960px";
+        canvas.style.height = "900px";
       }
 
       loadingBar.style.display = "block";
@@ -106,6 +110,7 @@
         createUnityInstance(canvas, config, (progress) => {
           progressBarFull.style.width = 100 * progress + "%";
               }).then((unityInstance) => {
+                myGameInstance = unityInstance;
                 loadingBar.style.display = "none";
                 fullscreenButton.onclick = () => {
                   unityInstance.SetFullscreen(1);
