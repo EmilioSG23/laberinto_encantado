@@ -11,12 +11,23 @@ public class ControlJuego : MonoBehaviour
     [HideInInspector]
     public bool isStarted = false;
     public Transform jugadores;
+    public GameObject mapCamera;
+    public GameObject playerCamera;
+    public Button cameraSwitchButton;
+    private int usingCamera = 0; //0 map, 1 player
+    public Slider cameraSlider;
+
+    public TMP_Text timer;
+    public Image timerImage;
 
     public GameObject panels;
     public GameObject fondo;
     public TMP_Text texto;
     public GameObject panelNoConnection;
-
+    public GameObject panelInfo;
+    public GameObject panelInfoInfo;
+    public GameObject panelPCControls;
+    public GameObject panelMovilControls;
     public GameObject countdownGO;
 
     public GameObject waitRoomGO;
@@ -78,14 +89,20 @@ public class ControlJuego : MonoBehaviour
         else if (instance != null)
             Destroy(gameObject);
     }
+    void Start(){
+        playerCamera.gameObject.SetActive(false);
+        mapCamera.gameObject.SetActive(true);
+    }
     public void disablePanelNoConnection(){
         panelNoConnection.SetActive(false);
     }
 
-    public void initGamePanel()
-    {
+    public void initGamePanel(){
+        resetCameras();
+        updateTimeTimer(60);
         disablePanelNoConnection();
         panels.SetActive(true);
+        closePanelInfo();
         panelEndgame.SetActive(false);
         panelDeath.SetActive(false);
         waitRoomGO.SetActive(true);
@@ -120,13 +137,52 @@ public class ControlJuego : MonoBehaviour
 #endif
         }
         waitRoomGO.SetActive(false);
+        closePanelInfo();
         StartCoroutine(iniciarCountdown());
+    }
+    
+    public void updateTimeTimer(int timeLeft){
+        timer.text = timeLeft <= 60 ? timeLeft.ToString() : "60";
+            if (timeLeft <= 15){
+                timer.color = Color.red;
+                timerImage.color = Color.red;
+            }else if (timeLeft <= 30){
+                timer.color = new Color(1.0f, 0.65f, 0.0f);
+                timerImage.color = new Color(1.0f, 0.65f, 0.0f);
+            }else if (timeLeft <= 45){
+                timer.color = Color.yellow;
+                timerImage.color = Color.yellow;
+            }else{
+                timer.color = Color.white;
+                timerImage.color = Color.white;
+            }
+    }
+
+    public void switchCamera(){
+        if (usingCamera == 0)
+            usingCamera = 1;
+        else
+            usingCamera = 0;
+
+        playerCamera.gameObject.SetActive(!playerCamera.gameObject.activeSelf);
+        mapCamera.gameObject.SetActive(!mapCamera.gameObject.activeSelf);
+
+        cameraSlider.GetComponent<CameraZoomController>().setCamera(usingCamera);
+    }
+    public void resetCameras(){
+        usingCamera = 0;
+        cameraSlider.GetComponent<CameraZoomController>().setCamera(usingCamera);
+        cameraSlider.GetComponent<CameraZoomController>().CanUse(false);
+        playerCamera.gameObject.SetActive(false);
+        mapCamera.gameObject.SetActive(true);
+        cameraSwitchButton.interactable = false;
     }
 
     public void endGame(int colorWinner)
     {
         disableGoalIndicator();
         panels.SetActive(true);
+        closePanelInfo();
         panelDeath.SetActive(false);
         panelEndgame.SetActive(true);
         foreach (Transform jugador in jugadores)
@@ -176,8 +232,7 @@ public class ControlJuego : MonoBehaviour
             resetButton.SetActive(true);
     }
 
-    public void resetGamePanels()
-    {
+    public void resetGamePanels(){
         panels.SetActive(true);
         panelEndgame.SetActive(false);
         panelDeath.SetActive(false);
@@ -211,10 +266,17 @@ public class ControlJuego : MonoBehaviour
             playerDeathSprite.GetComponent<Image>().color = Color.yellow;
     }
 
-    public void closeDeathPanel()
-    {
+    public void closeDeathPanel(){
+        resetCameras();
         panelDeath.SetActive(false);
         panels.SetActive(false);
+    }
+
+    private void closePanelInfo(){
+        panelInfo.SetActive(false);
+        panelInfoInfo.SetActive(false);
+        panelPCControls.SetActive(false);
+        panelMovilControls.SetActive(false);
     }
 
     private IEnumerator iniciarCountdown()
@@ -236,5 +298,7 @@ public class ControlJuego : MonoBehaviour
             jugador.transform.GetComponent<PlayerController>().parado = false;
         
         initGoalIndicator();
+        cameraSwitchButton.interactable = true;
+        cameraSlider.GetComponent<CameraZoomController>().CanUse(true);
     }
 }

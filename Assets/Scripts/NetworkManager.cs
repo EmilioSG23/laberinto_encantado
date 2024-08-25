@@ -25,8 +25,6 @@ public class NetworkManager : MonoBehaviour
     public CeldaController celdaPrefab;
     public GameObject jugadorPrefab;
     public GameObject BalaPrefab;
-    public TMP_Text timer;
-    public Image timerImage;
 
     private PlayerDTO localPlayer;
     //private string uri = "http://localhost:8000/game";
@@ -271,33 +269,14 @@ public class NetworkManager : MonoBehaviour
     }
     void OnTimeLeft(object response){
         int timeLeft = 0;
-        if (response is string jsonString)
-        {
+        if (response is string jsonString){
             timeLeft = int.Parse(jsonString)/ 1000;
         }
-        else if (response is SocketIOResponse socketIOResponse)
-        {
+        else if (response is SocketIOResponse socketIOResponse){
             timeLeft = socketIOResponse.GetValue<int>()/ 1000;
         }
 
-        runAction(() =>
-        {
-            timer.text = timeLeft.ToString();
-            if (timeLeft <= 15){
-                timer.color = Color.red;
-                timerImage.color = Color.red;
-            }else if (timeLeft <= 30){
-                timer.color = new Color(1.0f, 0.65f, 0.0f);
-                timerImage.color = new Color(1.0f, 0.65f, 0.0f);
-            }else if (timeLeft <= 45){
-                timer.color = Color.yellow;
-                timerImage.color = Color.yellow;
-            }else{
-                timer.color = Color.white;
-                timerImage.color = Color.white;
-            }
-                
-        });
+        runAction(() =>{ControlJuego.instance.updateTimeTimer(timeLeft);});
     }
     void OnEndGame(object response){
         runAction(() =>

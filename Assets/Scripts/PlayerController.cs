@@ -129,9 +129,12 @@ public class PlayerController : MonoBehaviour
             UseWeapon();
         }
 
-        if ((Input.touchCount < 1) && (Input.GetMouseButton(1) || Input.GetKey(KeyCode.C))){
+        if ((Input.touchCount < 1) && (Input.GetMouseButton(1) || Input.GetKey(KeyCode.C) || Input.GetKey(KeyCode.E))){
             ChangeWeapon();
         }
+
+        if (Input.GetKeyDown (KeyCode.R))
+            ControlJuego.instance.switchCamera();
     }
 
     public void UseWeapon()
@@ -200,6 +203,7 @@ public class PlayerController : MonoBehaviour
             this.weaponButton = weaponButton;
             this.localIndicator.SetActive(true);
             weaponButton.SetPlayer(this.gameObject);
+            ControlJuego.instance.playerCamera.GetComponent<PlayerCameraController>().setPlayer(gameObject);
         }
     }
 
