@@ -93,6 +93,9 @@ public class ControlJuego : MonoBehaviour
         playerCamera.gameObject.SetActive(false);
         mapCamera.gameObject.SetActive(true);
     }
+    public void showPanelNoConnection(){
+        panelNoConnection.SetActive(true);
+    }
     public void disablePanelNoConnection(){
         panelNoConnection.SetActive(false);
     }

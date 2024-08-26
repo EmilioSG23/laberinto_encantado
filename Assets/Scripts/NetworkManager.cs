@@ -65,12 +65,14 @@ public class NetworkManager : MonoBehaviour
         };
 
         socket.OnDisconnected += (sender, e) =>{
+            Debug.Log ("Conexión perdida");
             if (localPlayer != null)
                 #if UNITY_WEBGL && !UNITY_EDITOR
                 disconnectPlayer(JsonUtility.ToJson(localPlayer));
                 #else
                 socket.Emit("disconnectPlayer", JsonUtility.ToJson(localPlayer));
                 #endif
+            ControlJuego.instance.showPanelNoConnection();
         };
 
         socket.Connect();
@@ -96,26 +98,12 @@ public class NetworkManager : MonoBehaviour
         #endif
     }
 
+    public void OnApplicationQuit(){
+        DisconnectSocket();
+    }
 
-
-    /*public void OnApplicationQuit()
-    {
-        if (localPlayer != null)
-        #if UNITY_WEBGL && !UNITY_EDITOR
-            disconnectPlayer(JsonUtility.ToJson(localPlayer));
-        #else
-            socket.Emit("disconnectPlayer", JsonUtility.ToJson(localPlayer));
-        #endif
-    }*/
-
-    void OnDestroy ()
-    {
-        if (localPlayer != null)
-        #if UNITY_WEBGL && !UNITY_EDITOR
-            disconnectPlayer(JsonUtility.ToJson(localPlayer));
-        #else
-            socket.Emit("disconnectPlayer", JsonUtility.ToJson(localPlayer));
-        #endif
+    void OnDestroy (){
+        DisconnectSocket();
     }
 
     //ON Events
@@ -128,22 +116,25 @@ public class NetworkManager : MonoBehaviour
     }
 
     public void OnDisconnected(string data){
-        if (localPlayer != null)
-        {
+        Debug.Log ("Conexión perdida");
+        if (localPlayer != null){
             string json = JsonUtility.ToJson(localPlayer);
             disconnectPlayer(json);
         }
+        ControlJuego.instance.showPanelNoConnection();
     }
     #endif
+
+    private void DisconnectSocket(){
+        if (socket != null)
+            socket.Disconnect();
+    }
 
     void OnMessage(object response){
         Debug.Log(response);
     }
     void OnInit(){
-        runAction(() =>
-        {
-            ControlJuego.instance.initGame(false);
-        });
+        runAction(() =>{ControlJuego.instance.initGame(false);});
     }
     void OnResetGame(object response){
         GameDTO gameInstance = CreateFromJSON<GameDTO>(response);
@@ -234,13 +225,10 @@ public class NetworkManager : MonoBehaviour
         {
             numberParticipants = socketIOResponse.GetValue<int>();
         }
-        runAction(() =>
-        {
-            ControlJuego.instance.receiveNumberParticipants(numberParticipants);
-        });
+        runAction(() =>{ControlJuego.instance.receiveNumberParticipants(numberParticipants);});
     }
     void OnAdmin(){
-        runAction(() => { ControlJuego.instance.initAdminPanel(); });
+        runAction(() => {ControlJuego.instance.initAdminPanel();});
     }
     void OnGetAllPlayers(object response){
         GameDTO gameInstance = CreateFromJSON<GameDTO>(response);
@@ -438,6 +426,7 @@ public class NetworkManager : MonoBehaviour
             }
             if (!ControlJuego.instance.isStarted)
                 ControlJuego.instance.initGamePanel();
+            ControlJuego.instance.disablePanelNoConnection();
             ControlJuego.instance.setTeamGoalIndicator(colorTeam);
         });
     }
