@@ -93,6 +93,12 @@ public class ControlJuego : MonoBehaviour
         playerCamera.gameObject.SetActive(false);
         mapCamera.gameObject.SetActive(true);
     }
+    public void closeAllPanels(){
+        panels.SetActive(false);
+    }
+    public void showAllPanels(){
+        panels.SetActive(true);
+    }
     public void showPanelNoConnection(){
         panelNoConnection.SetActive(true);
     }
@@ -104,7 +110,7 @@ public class ControlJuego : MonoBehaviour
         resetCameras();
         updateTimeTimer(60);
         disablePanelNoConnection();
-        panels.SetActive(true);
+        showAllPanels();
         closePanelInfo();
         panelEndgame.SetActive(false);
         panelDeath.SetActive(false);
@@ -184,7 +190,7 @@ public class ControlJuego : MonoBehaviour
     public void endGame(int colorWinner)
     {
         disableGoalIndicator();
-        panels.SetActive(true);
+        showAllPanels();
         closePanelInfo();
         panelDeath.SetActive(false);
         panelEndgame.SetActive(true);
@@ -236,7 +242,7 @@ public class ControlJuego : MonoBehaviour
     }
 
     public void resetGamePanels(){
-        panels.SetActive(true);
+        showAllPanels();
         panelEndgame.SetActive(false);
         panelDeath.SetActive(false);
         waitRoomGO.SetActive(true);
@@ -257,7 +263,7 @@ public class ControlJuego : MonoBehaviour
 
     public void showDeathPanel(int color)
     {
-        panels.SetActive(true);
+        showAllPanels();
         panelDeath.SetActive(true);
         if (color == 0)
             playerDeathSprite.GetComponent<Image>().color = Color.red;
@@ -272,7 +278,7 @@ public class ControlJuego : MonoBehaviour
     public void closeDeathPanel(){
         resetCameras();
         panelDeath.SetActive(false);
-        panels.SetActive(false);
+        closeAllPanels();
     }
 
     private void closePanelInfo(){
@@ -295,7 +301,7 @@ public class ControlJuego : MonoBehaviour
         texto.text = "¡YA!";
         yield return new WaitForSeconds(1);
         countdownGO.SetActive(false);
-        panels.SetActive(false);
+        closeAllPanels();
 
         foreach (Transform jugador in jugadores.transform)
             jugador.transform.GetComponent<PlayerController>().parado = false;

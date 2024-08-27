@@ -426,7 +426,11 @@ public class NetworkManager : MonoBehaviour
             }
             if (!ControlJuego.instance.isStarted)
                 ControlJuego.instance.initGamePanel();
-            ControlJuego.instance.disablePanelNoConnection();
+            else{
+                ControlJuego.instance.disablePanelNoConnection();
+                ControlJuego.instance.closeAllPanels();
+            }
+            
             ControlJuego.instance.setTeamGoalIndicator(colorTeam);
         });
     }
@@ -442,10 +446,7 @@ public class NetworkManager : MonoBehaviour
     #if UNITY_WEBGL && !UNITY_EDITOR
         action();
     #else
-        UnityThread.executeInUpdate(() =>
-        {
-            action();
-        });
+        UnityThread.executeInUpdate(() =>{action();});
     #endif
     }
 
