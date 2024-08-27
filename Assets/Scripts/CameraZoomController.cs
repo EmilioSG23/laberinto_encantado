@@ -31,15 +31,16 @@ public class CameraZoomController : MonoBehaviour{
             return;
         float scrollInput = Input.GetAxis("Mouse ScrollWheel");
 
-        if (actualCamera != null)
-        {
-            if (actualCamera.orthographic)
-            {
+        if (actualCamera != null && actualCamera.orthographic){
+            if (scrollInput != 0f)
                 actualCamera.orthographicSize -= scrollInput * 100f;
-                actualCamera.orthographicSize = Mathf.Clamp(actualCamera.orthographicSize, slider.minValue, slider.maxValue);
+            if (Input.GetKeyDown(KeyCode.Z) || Input.GetKeyDown(KeyCode.U))
+                actualCamera.orthographicSize-= 50f;
+            if (Input.GetKeyDown(KeyCode.X) || Input.GetKeyDown(KeyCode.I))
+                actualCamera.orthographicSize+= 50f;
 
-                slider.value = actualCamera.orthographicSize;
-            }
+            actualCamera.orthographicSize = Mathf.Clamp(actualCamera.orthographicSize, slider.minValue, slider.maxValue);
+            slider.value = actualCamera.orthographicSize;
         }
     }
 

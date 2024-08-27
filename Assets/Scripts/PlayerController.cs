@@ -123,7 +123,7 @@ public class PlayerController : MonoBehaviour
 #endif
         }
 
-        if ((Input.GetKey(KeyCode.Space) || (Input.GetMouseButton(0) &&
+        if ((Input.GetKey(KeyCode.Space) || Input.GetKey(KeyCode.P) || (Input.GetMouseButton(0) &&
         (joystick.GetComponent<Joystick>().Vertical == 0)))
          && !weaponButton.IsPointerOverUI()){
             UseWeapon();

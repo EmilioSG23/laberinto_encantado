@@ -60,19 +60,29 @@ public class NetworkManager : MonoBehaviour
         socket.OnConnected += (sender, e) =>{
             Debug.Log ("Unity Editor/Unity Application");
             Debug.Log($"Conectado a {uri}");
+            runAction(()=>{
+                ControlJuego.instance.resetCameras();
+                RemovePlayersGameObject();
+            });
             socket.Emit("joinGame", JsonUtility.ToJson(new PlayerDTO("", 0)));
             //socket.Emit("createMap", JsonUtility.ToJson(new MapDTO (15, 15, 1, 1)));
         };
 
         socket.OnDisconnected += (sender, e) =>{
             Debug.Log ("Conexión perdida");
-            if (localPlayer != null)
+            /*if (localPlayer != null)
                 #if UNITY_WEBGL && !UNITY_EDITOR
                 disconnectPlayer(JsonUtility.ToJson(localPlayer));
                 #else
                 socket.Emit("disconnectPlayer", JsonUtility.ToJson(localPlayer));
                 #endif
-            ControlJuego.instance.showPanelNoConnection();
+            */
+            runAction(()=>{
+                ControlJuego.instance.resetCameras();
+                ControlJuego.instance.showAllPanels();
+                ControlJuego.instance.showPanelNoConnection();
+                StopAllPlayers();
+            });
         };
 
         socket.Connect();
@@ -111,17 +121,26 @@ public class NetworkManager : MonoBehaviour
     public void OnConnected(string data){
         Debug.Log ("Unity WebGL");
         Debug.Log($"Conectado a {uri}");
+        runAction(()=>{
+            ControlJuego.instance.resetCameras();
+            RemovePlayersGameObject();
+        });
         string json = JsonUtility.ToJson(new PlayerDTO("", "", 0));
         joinGame(json);
     }
 
     public void OnDisconnected(string data){
         Debug.Log ("Conexión perdida");
-        if (localPlayer != null){
+        /*if (localPlayer != null){
             string json = JsonUtility.ToJson(localPlayer);
             disconnectPlayer(json);
-        }
-        ControlJuego.instance.showPanelNoConnection();
+        }*/
+        runAction(()=>{
+            ControlJuego.instance.resetCameras();
+            ControlJuego.instance.showAllPanels();
+            ControlJuego.instance.showPanelNoConnection();
+            StopAllPlayers();
+        });
     }
     #endif
 
@@ -280,10 +299,7 @@ public class NetworkManager : MonoBehaviour
             }
 
             ControlJuego.instance.endGame(winnerTeam);
-            foreach (Transform jugador in jugadores)
-            {
-                jugador.GetComponent<PlayerController>().Stop();
-            }
+            StopAllPlayers();
         });
     }
     void OnJoinGame(object response){
@@ -394,6 +410,16 @@ public class NetworkManager : MonoBehaviour
                 #endif
             }
         });
+    }
+
+    private void RemovePlayersGameObject(){
+        foreach (Transform jugador in jugadores)
+            Destroy(jugador.gameObject);
+    }
+
+    private void StopAllPlayers(){
+        foreach (Transform jugador in jugadores)
+            jugador.GetComponent<PlayerController>().Stop();
     }
 
     private void initPlayerIndicator(string name, int numberInTeam, int colorTeam){
